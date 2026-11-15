@@ -15,9 +15,6 @@
     "expo-env.d.ts"
   ],
   "exclude": [
-    "node_modules",
-    "store-screenshots",
-    "CFVideos",
-    "ai-worker"
+    "node_modules"
   ]
 }
