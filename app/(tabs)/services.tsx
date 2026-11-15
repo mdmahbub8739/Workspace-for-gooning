@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/auth';
-import { IconName } from '@/components/ui/icon';
+import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
 import { ProportionBar } from '@/components/ui/mini-chart';
 import { Banner, Group, IconCircle, ListRow, SearchBar } from '@/components/ui/kit';
+import { CreateWorkerSheet } from '@/components/worker-ide/CreateWorkerSheet';
 import { Spacing, FontSize, Radius } from '@/constants/theme';
 import * as api from '@/services/cloudflare';
 import { WorkerScript, KVNamespace, R2Bucket, PagesProject } from '@/services/types';
@@ -55,6 +56,7 @@ export default function ServicesScreen() {
   const [errors, setErrors] = useState<ServiceError>({});
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [showCreateWorker, setShowCreateWorker] = useState(false);
 
   const getErrorMsg = (e: any): string => {
     return e?.response?.data?.errors?.[0]?.message
@@ -388,7 +390,25 @@ export default function ServicesScreen() {
 
         return (
           <View key={section.key}>
-            <SectionHeader title={section.title} />
+            <SectionHeader
+              title={section.title}
+              action={
+                section.key === 'workers' ? (
+                  <TouchableOpacity
+                    onPress={() => setShowCreateWorker(true)}
+                    hitSlop={10}
+                    style={styles.createWorkerBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('services.new_worker')}
+                  >
+                    <Icon name="plus" size={18} color={colors.primary} />
+                    <Text style={[styles.createWorkerText, { color: colors.primary }]}>
+                      {t('services.new_worker')}
+                    </Text>
+                  </TouchableOpacity>
+                ) : undefined
+              }
+            />
             {section.error ? (
               <Banner message={section.error} />
             ) : section.items.length === 0 ? (
@@ -413,6 +433,22 @@ export default function ServicesScreen() {
 
       {!perms.workers && !perms.kv && !perms.r2 && !perms.pages && (
         <EmptyState icon="lock" title="No access" message="Your token does not have permission for any service. Create a new token with Account level permissions." />
+      )}
+
+      {accountId && (
+        <CreateWorkerSheet
+          visible={showCreateWorker}
+          accountId={accountId}
+          onClose={() => setShowCreateWorker(false)}
+          onCreated={(scriptName, openIde) => {
+            setShowCreateWorker(false);
+            fetchAll();
+            router.push({
+              pathname: (openIde ? '/worker-ide/[script]' : '/worker/[script]') as any,
+              params: { script: scriptName },
+            });
+          }}
+        />
       )}
     </ScrollView>
   );
@@ -447,4 +483,15 @@ const styles = StyleSheet.create({
   tileBody: { flex: 1, gap: 2 },
   tileTitle: { fontSize: FontSize.md, fontWeight: '500' },
   tileCount: { fontSize: FontSize.sm },
+  createWorkerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  createWorkerText: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
 });

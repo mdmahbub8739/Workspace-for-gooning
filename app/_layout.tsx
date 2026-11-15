@@ -130,6 +130,7 @@ function AppContent() {
           <Stack.Screen name="r2/[bucket]" options={{ animation: 'slide_from_right', headerShown: true }} />
           <Stack.Screen name="pages/[project]" options={{ animation: 'slide_from_right', headerShown: true }} />
           <Stack.Screen name="worker/[script]" options={{ animation: 'slide_from_right', headerShown: true }} />
+          <Stack.Screen name="worker-ide/[script]" options={{ animation: 'slide_from_right', headerShown: false }} />
           <Stack.Screen name="worker-tail/[script]" options={{ animation: 'slide_from_right', headerShown: true }} />
         </Stack>
       </LockGate>

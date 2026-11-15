@@ -399,6 +399,12 @@ export default function WorkerDetailScreen() {
         />
         {!showCode ? (
           <Group>
+            <ListRow
+              icon="file-code"
+              title={t('worker.open_ide')}
+              subtitle={t('worker.open_ide_hint')}
+              onPress={() => router.push({ pathname: '/worker-ide/[script]' as any, params: { script } })}
+            />
             <ListRow icon="code" title={t('worker.view_code')} onPress={loadCode} />
           </Group>
         ) : contentError ? (
@@ -408,6 +414,13 @@ export default function WorkerDetailScreen() {
         ) : (
           <Card style={styles.codeCard}>
             <View style={styles.codeActions}>
+              <Button
+                title={t('worker.open_ide')}
+                variant="primary"
+                size="sm"
+                icon={<Icon name="file-code" size={14} color="#FFFFFF" />}
+                onPress={() => router.push({ pathname: '/worker-ide/[script]' as any, params: { script } })}
+              />
               {moduleCount <= 1 && (
                 <Button
                   title={t('worker.edit_code')}
@@ -426,7 +439,9 @@ export default function WorkerDetailScreen() {
               />
             </View>
             {moduleCount > 1 && (
-              <Text style={[styles.multiNote, { color: colors.textTertiary }]}>{t('worker.multi_module_note')}</Text>
+              <Text style={[styles.multiNote, { color: colors.textTertiary }]}>
+                {t('worker.multi_module_ide_note', { count: moduleCount })}
+              </Text>
             )}
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <Text style={[styles.code, { color: colors.text, backgroundColor: colors.surfaceSecondary }]}>

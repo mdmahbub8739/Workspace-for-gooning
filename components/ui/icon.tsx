@@ -24,7 +24,9 @@ export type IconName =
   | 'sun' | 'moon' | 'smartphone'
   // UI
   | 'menu' | 'logout' | 'close' | 'developer-mode' | 'delete-sweep'
-  | 'pageview' | 'clock' | 'download' | 'https' | 'send' | 'bell' | 'star' | 'sparkles';
+  | 'pageview' | 'clock' | 'download' | 'https' | 'send' | 'bell' | 'star' | 'sparkles'
+  // IDE
+  | 'folder' | 'folder-open' | 'file' | 'file-code' | 'sidebar' | 'more-horizontal' | 'undo' | 'check';
 
 interface IconProps {
   name: IconName;
@@ -411,6 +413,45 @@ export function Icon({ name, size = 24, color, strokeWidth = 2 }: IconProps) {
         'M7 11V7a5 5 0 0 1 10 0v4',
         'm9 15 2 2 4-4',
       ]} rects={[{ x: 3, y: 11, w: 18, h: 11, rx: 2 }]} />;
+
+    // ─── IDE ──────────────────────────────────────────────
+    case 'folder':
+      return <LucideIcon size={size} color={c} sw={sw} paths={[
+        'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z',
+      ]} />;
+    case 'folder-open':
+      return <LucideIcon size={size} color={c} sw={sw} paths={[
+        'm6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2',
+      ]} />;
+    case 'file':
+      return <LucideIcon size={size} color={c} sw={sw} paths={[
+        'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z',
+        'M14 2v4a2 2 0 0 0 2 2h4',
+      ]} />;
+    case 'file-code':
+      return <LucideIcon size={size} color={c} sw={sw} paths={[
+        'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z',
+        'M14 2v4a2 2 0 0 0 2 2h4',
+        'm10 13-2 2 2 2',
+        'm14 17 2-2-2-2',
+      ]} />;
+    case 'sidebar':
+      return <LucideIcon size={size} color={c} sw={sw} paths={[
+        'M9 3v18',
+      ]} rects={[{ x: 3, y: 3, w: 18, h: 18, rx: 2 }]} />;
+    case 'more-horizontal':
+      return <LucideIcon size={size} color={c} sw={sw} paths={[]} circles={[
+        { cx: 12, cy: 12, r: 1 },
+        { cx: 19, cy: 12, r: 1 },
+        { cx: 5, cy: 12, r: 1 },
+      ]} />;
+    case 'undo':
+      return <LucideIcon size={size} color={c} sw={sw} paths={[
+        'M3 7v6h6',
+        'M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13',
+      ]} />;
+    case 'check':
+      return <LucideIcon size={size} color={c} sw={sw} paths={['M20 6 9 17l-5-5']} />;
 
     default:
       return <LucideIcon size={size} color={c} sw={sw} paths={[]} circles={[{ cx: 12, cy: 12, r: 10 }, { cx: 12, cy: 12, r: 1 }]} />;

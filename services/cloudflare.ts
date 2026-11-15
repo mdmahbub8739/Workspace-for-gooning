@@ -1017,15 +1017,15 @@ export async function getWorkerContent(accountId: string, scriptName: string): P
 export interface WorkerModule {
   name: string;
   content: string;
+  contentType?: string;
 }
 
 /**
  * Cloudflare returns an ES-module Worker's code (from `getWorkerContent`) as a
  * multipart/form-data bundle — even a single-file `export default` Worker, and
  * the dashboard's default "Hello World" template is one. Service-worker scripts
- * come back as plain text. This splits the bundle into its modules so a
- * single-module Worker is still editable; only a genuine multi-file Worker
- * (`modules.length > 1`) should be treated as uneditable inline.
+ * come back as plain text. This splits the bundle into its modules so both
+ * single-module and multi-file Workers can be inspected and edited.
  */
 export function parseWorkerModules(raw: string): { modules: WorkerModule[]; multipart: boolean } {
   const trimmed = raw.replace(/^[\r\n]+/, '');
@@ -1039,10 +1039,16 @@ export function parseWorkerModules(raw: string): { modules: WorkerModule[]; mult
     if (!part || part.startsWith('--')) continue; // preamble or closing boundary
     const headerEnd = part.search(/\r?\n\r?\n/);
     if (headerEnd === -1) continue;
-    const name = part.slice(0, headerEnd).match(/name="([^"]+)"/i);
+    const headers = part.slice(0, headerEnd);
+    const name = headers.match(/name="([^"]+)"/i);
     if (!name) continue;
+    const ctMatch = headers.match(/Content-Type:\s*([^\r\n;]+)/i);
     const body = part.slice(headerEnd).replace(/^\r?\n\r?\n/, '').replace(/\r?\n$/, '');
-    modules.push({ name: name[1], content: body });
+    modules.push({
+      name: name[1],
+      content: body,
+      ...(ctMatch ? { contentType: ctMatch[1].trim().toLowerCase() } : {}),
+    });
   }
   return modules.length ? { modules, multipart: true } : { modules: [{ name: '', content: raw }], multipart: false };
 }
@@ -1051,8 +1057,7 @@ export function parseWorkerModules(raw: string): { modules: WorkerModule[]; mult
  * Replace a Worker's code while keeping everything else. This writes the
  * `/content` sub-resource rather than re-uploading the whole script, so the
  * Worker's bindings, secrets, variables, routes, cron triggers and settings are
- * all preserved — only the code changes. Single-module Workers only (the common
- * case); multi-module Workers are built from a toolchain, not edited by hand.
+ * all preserved — only the code changes.
  *
  * `fileUri` points at a local file holding the new code (written by the caller);
  * `moduleSyntax` picks ES-module (`export default`) over service-worker
@@ -1074,6 +1079,122 @@ export async function updateWorkerContent(accountId: string, scriptName: string,
     form,
     { headers: { 'Content-Type': 'multipart/form-data' } }
   );
+}
+
+export interface WorkerModuleUploadPart {
+  name: string;
+  content?: string;
+  fileUri?: string;
+  contentType: string;
+}
+
+async function buildWorkerMultipartForm(
+  metadata: Record<string, unknown>,
+  modules: WorkerModuleUploadPart[]
+): Promise<{ form: FormData; cleanup: () => Promise<void> }> {
+  const form = new FormData();
+  form.append('metadata', JSON.stringify(metadata));
+  const tempUris: string[] = [];
+
+  if (Platform.OS === 'web') {
+    for (const mod of modules) {
+      let blob: Blob;
+      if (mod.fileUri) {
+        const resp = await fetch(mod.fileUri);
+        const raw = await resp.blob();
+        blob = new Blob([raw], { type: mod.contentType });
+      } else {
+        blob = new Blob([mod.content ?? ''], { type: mod.contentType });
+      }
+      form.append(mod.name, blob, mod.name);
+    }
+    return { form, cleanup: async () => {} };
+  }
+
+  const FileSystem = require('expo-file-system/legacy');
+  for (let i = 0; i < modules.length; i++) {
+    const mod = modules[i];
+    if (mod.fileUri) {
+      form.append(mod.name, { uri: mod.fileUri, name: mod.name, type: mod.contentType } as any);
+    } else {
+      const safeExt = mod.name.includes('.') ? mod.name.slice(mod.name.lastIndexOf('.')).replace(/[^a-zA-Z0-9.]/g, '') : '.js';
+      const uri = `${FileSystem.cacheDirectory}cf-worker-mod-${Date.now()}-${i}${safeExt || '.js'}`;
+      await FileSystem.writeAsStringAsync(uri, mod.content ?? '');
+      tempUris.push(uri);
+      form.append(mod.name, { uri, name: mod.name, type: mod.contentType } as any);
+    }
+  }
+
+  return {
+    form,
+    cleanup: async () => {
+      await Promise.all(tempUris.map((u) => FileSystem.deleteAsync(u, { idempotent: true }).catch(() => {})));
+    },
+  };
+}
+
+/**
+ * Atomically replace all modules in a Worker script via `/content` while preserving
+ * existing bindings, secrets, variables, cron triggers, and routes.
+ */
+export async function updateWorkerModules(
+  accountId: string,
+  scriptName: string,
+  opts: {
+    modules: WorkerModuleUploadPart[];
+    mainModule: string;
+    moduleSyntax?: boolean;
+  }
+): Promise<CFResponse<WorkerScript>> {
+  const isESModule = opts.modules.length > 1 || opts.moduleSyntax !== false;
+  const metadata = isESModule
+    ? { main_module: opts.mainModule }
+    : { body_part: opts.mainModule };
+  const { form, cleanup } = await buildWorkerMultipartForm(metadata, opts.modules);
+  try {
+    const res = await getClient().put<CFResponse<WorkerScript>>(
+      `/accounts/${accountId}/workers/scripts/${scriptName}/content`,
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return res.data;
+  } finally {
+    await cleanup();
+  }
+}
+
+/**
+ * Create and deploy a new Worker script (or overwrite full script metadata + modules)
+ * using PUT /accounts/{accountId}/workers/scripts/{scriptName}.
+ */
+export async function createWorkerScript(
+  accountId: string,
+  scriptName: string,
+  opts: {
+    modules: WorkerModuleUploadPart[];
+    mainModule: string;
+    compatibilityDate?: string;
+    usageModel?: 'standard' | 'bundled' | 'unbound';
+    moduleSyntax?: boolean;
+  }
+): Promise<CFResponse<WorkerScript>> {
+  const isESModule = opts.modules.length > 1 || opts.moduleSyntax !== false;
+  const metadata: Record<string, unknown> = {
+    ...(isESModule ? { main_module: opts.mainModule } : { body_part: opts.mainModule }),
+    ...(opts.compatibilityDate ? { compatibility_date: opts.compatibilityDate } : {}),
+    ...(opts.usageModel ? { usage_model: opts.usageModel } : {}),
+  };
+  const { form, cleanup } = await buildWorkerMultipartForm(metadata, opts.modules);
+  try {
+    const res = await getClient().put<CFResponse<WorkerScript>>(
+      `/accounts/${accountId}/workers/scripts/${scriptName}`,
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return res.data;
+  } finally {
+    await cleanup();
+  }
 }
 
 export async function getWorkerSettings(accountId: string, scriptName: string): Promise<CFResponse<WorkerSettings>> {
