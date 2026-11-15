@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { FloatingTabBar } from '@/components/ui/tab-bar';
 import { HeaderButton } from '@/components/ui/header-button';
-import { Colors, Spacing } from '@/constants/theme';
-import { useThemeContext } from '@/contexts/theme';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/contexts/auth';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -22,10 +22,9 @@ function getOnboardingDone(): boolean {
 }
 
 export default function TabLayout() {
-  const { resolved } = useThemeContext();
-  const colors = Colors[resolved];
+  const { colors } = useTheme();
   const { t } = useTranslation();
-  const { isLoading, isAuthenticated, connectionError, retrySession } = useAuth();
+  const { isLoading, isAuthenticated, connectionError, retrySession, logout } = useAuth();
   const [onboardingChecked, setOnboardingChecked] = useState(Platform.OS === 'web');
   const [onboardingDone, setOnboardingDone] = useState(getOnboardingDone);
 
@@ -43,9 +42,10 @@ export default function TabLayout() {
   if (!onboardingDone) return <Redirect href="/onboarding" />;
   if (!isAuthenticated && connectionError) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', padding: Spacing.xl, backgroundColor: colors.background }}>
+      <View style={{ flex: 1, justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl, backgroundColor: colors.background }}>
         <EmptyState icon="globe" title={t('auth.offline_title')} message={t('auth.offline_message')} />
         <Button title={t('common.retry')} onPress={retrySession} size="lg" />
+        <Button title={t('auth.sign_in')} onPress={logout} variant="secondary" size="lg" />
       </View>
     );
   }
@@ -64,12 +64,13 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.text,
+        headerTintColor: colors.onSurface,
         headerShadowVisible: false,
         headerTitleAlign: 'left',
-        headerTitleStyle: { fontSize: 24, fontWeight: '400', letterSpacing: -0.3 },
+        headerTitleStyle: { fontSize: 24, fontWeight: '600', letterSpacing: -0.4 },
         headerRight: headerActions,
         sceneStyle: { backgroundColor: colors.background },
+        animation: 'fade',
       }}
     >
       <Tabs.Screen

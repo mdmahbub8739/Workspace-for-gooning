@@ -17,8 +17,8 @@ export const OAUTH_REDIRECT_URI = 'https://cfmobile-ai.imtaqin.id/oauth/callback
 export const OAUTH_APP_RETURN = 'cfmobile://oauth/callback';
 
 const AUTH_ENDPOINT = 'https://dash.cloudflare.com/oauth2/auth';
-const TOKEN_ENDPOINT = 'https://dash.cloudflare.com/oauth2/token';
-const REVOKE_ENDPOINT = 'https://dash.cloudflare.com/oauth2/revoke';
+const TOKEN_ENDPOINT = Platform.OS === 'web' ? '/__cf_oauth/token' : 'https://dash.cloudflare.com/oauth2/token';
+const REVOKE_ENDPOINT = Platform.OS === 'web' ? '/__cf_oauth/revoke' : 'https://dash.cloudflare.com/oauth2/revoke';
 const PENDING_KEY = 'cf_oauth_pending';
 const PENDING_TTL_MS = 15 * 60 * 1000;
 

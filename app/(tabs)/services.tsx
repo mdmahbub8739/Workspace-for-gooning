@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/auth';
@@ -12,13 +12,13 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
 import { ProportionBar } from '@/components/ui/mini-chart';
 import { Banner, Group, IconCircle, ListRow, SearchBar } from '@/components/ui/kit';
+import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
 import { CreateWorkerSheet } from '@/components/worker-ide/CreateWorkerSheet';
-import { Spacing, FontSize, Radius } from '@/constants/theme';
+import { FontSize, Radius, Spacing } from '@/constants/theme';
 import * as api from '@/services/cloudflare';
-import { WorkerScript, KVNamespace, R2Bucket, PagesProject } from '@/services/types';
 import { D1Database } from '@/services/cloudflare';
+import { KVNamespace, PagesProject, R2Bucket, WorkerScript } from '@/services/types';
 
-/** One product's list on this tab: shown five at a time, searchable, collapsible. */
 interface Section {
   key: string;
   title: string;
@@ -37,14 +37,13 @@ interface ServiceError {
   d1?: string;
 }
 
-/** Rows shown per section before "show all". */
 const PREVIEW = 5;
 
 export default function ServicesScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { accountId, permissions } = useAuth();
-  const perms = permissions ?? { workers: true, kv: true, r2: true, pages: true, d1: true } as any;
+  const perms = permissions ?? ({ workers: true, kv: true, r2: true, pages: true, d1: true } as any);
 
   const [workers, setWorkers] = useState<WorkerScript[]>([]);
   const [kvNamespaces, setKvNamespaces] = useState<KVNamespace[]>([]);
@@ -58,12 +57,11 @@ export default function ServicesScreen() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showCreateWorker, setShowCreateWorker] = useState(false);
 
-  const getErrorMsg = (e: any): string => {
-    return e?.response?.data?.errors?.[0]?.message
-      ?? e?.response?.data?.messages?.[0]?.message
-      ?? e?.message
-      ?? 'Unknown error';
-  };
+  const getErrorMsg = (e: any): string =>
+    e?.response?.data?.errors?.[0]?.message
+    ?? e?.response?.data?.messages?.[0]?.message
+    ?? e?.message
+    ?? 'Unknown error';
 
   const fetchAll = useCallback(async () => {
     if (!accountId) {
@@ -86,7 +84,6 @@ export default function ServicesScreen() {
       setWorkers(Array.isArray(result) ? result : []);
     } else {
       newErrors.workers = getErrorMsg(wRes.reason);
-      console.log('[CF] Workers error:', wRes.reason?.response?.data ?? wRes.reason?.message);
     }
 
     if (kvRes.status === 'fulfilled') {
@@ -94,7 +91,6 @@ export default function ServicesScreen() {
       setKvNamespaces(Array.isArray(result) ? result : []);
     } else {
       newErrors.kv = getErrorMsg(kvRes.reason);
-      console.log('[CF] KV error:', kvRes.reason?.response?.data ?? kvRes.reason?.message);
     }
 
     if (r2Res.status === 'fulfilled') {
@@ -102,7 +98,6 @@ export default function ServicesScreen() {
       setR2Buckets(Array.isArray(result) ? result : []);
     } else {
       newErrors.r2 = getErrorMsg(r2Res.reason);
-      console.log('[CF] R2 error:', r2Res.reason?.response?.data ?? r2Res.reason?.message);
     }
 
     if (pRes.status === 'fulfilled') {
@@ -110,7 +105,6 @@ export default function ServicesScreen() {
       setPages(Array.isArray(result) ? result : []);
     } else {
       newErrors.pages = getErrorMsg(pRes.reason);
-      console.log('[CF] Pages error:', pRes.reason?.response?.data ?? pRes.reason?.message);
     }
 
     if (d1Res.status === 'fulfilled') {
@@ -118,7 +112,6 @@ export default function ServicesScreen() {
       setD1Dbs(Array.isArray(result) ? result : []);
     } else {
       newErrors.d1 = getErrorMsg(d1Res.reason);
-      console.log('[CF] D1 error:', d1Res.reason?.response?.data ?? d1Res.reason?.message);
     }
 
     setErrors(newErrors);
@@ -138,13 +131,15 @@ export default function ServicesScreen() {
         scrollEnabled={false}
         accessibilityLabel={t('common.loading')}
       >
-        <SkeletonRows count={1} />
-        <View style={{ height: Spacing.md }} />
-        <SkeletonStats count={2} />
-        <SkeletonHeading />
-        <SkeletonRows count={4} />
-        <SkeletonHeading width={95} />
-        <SkeletonRows count={3} />
+        <View style={styles.inner}>
+          <SkeletonRows count={1} />
+          <View style={{ height: Spacing.md }} />
+          <SkeletonStats count={2} />
+          <SkeletonHeading />
+          <SkeletonRows count={4} />
+          <SkeletonHeading width={95} />
+          <SkeletonRows count={3} />
+        </View>
       </ScrollView>
     );
   }
@@ -161,8 +156,13 @@ export default function ServicesScreen() {
     );
   }
 
-  // One neutral ink at stepped strengths, so the mix reads without a rainbow.
-  const shades = ['E6', 'B3', '80', '59', '33'];
+  const sliceColors = [
+    colors.primary,
+    colors.secondary,
+    colors.tertiary,
+    colors.primaryLight,
+    colors.outline,
+  ];
   const resourceSlices = [
     { label: t('services.workers'), value: workers.length },
     { label: 'KV', value: kvNamespaces.length },
@@ -170,22 +170,22 @@ export default function ServicesScreen() {
     { label: 'Pages', value: pages.length },
     { label: 'D1', value: d1Dbs.length },
   ]
-    .map((s, i) => ({ ...s, color: colors.text + shades[i] }))
+    .map((s, i) => ({ ...s, color: sliceColors[i % sliceColors.length] }))
     .filter((s) => s.value > 0);
   const totalResources = resourceSlices.reduce((sum, s) => sum + s.value, 0);
 
   const serviceTile = (icon: IconName, title: string, count: number, error?: string) => (
     <View
       key={title}
-      style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+      style={[styles.tile, { backgroundColor: colors.surfaceContainer }]}
     >
-      <IconCircle name={icon} size={34} tone={error ? 'error' : 'neutral'} />
+      <IconCircle name={icon} size={38} tone={error ? 'error' : 'primary'} />
       <View style={styles.tileBody}>
-        <Text style={[styles.tileTitle, { color: colors.text }]} numberOfLines={1}>{title}</Text>
+        <Text style={[styles.tileTitle, { color: colors.onSurface }]} numberOfLines={1}>{title}</Text>
         {error ? (
           <Text style={[styles.tileCount, { color: colors.error }]} numberOfLines={1}>{error}</Text>
         ) : (
-          <Text style={[styles.tileCount, { color: colors.textSecondary }]} numberOfLines={1}>
+          <Text style={[styles.tileCount, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
             {count} {count === 1 ? 'item' : 'items'}
           </Text>
         )}
@@ -209,6 +209,7 @@ export default function ServicesScreen() {
           <ListRow
             key={w.id}
             icon="code"
+            iconTone="primary"
             title={w.id}
             subtitle={`${t('services.modified')}: ${new Date(w.modified_on).toLocaleDateString()} · ${t('services.tap_tail')}`}
             trailing={<Badge label={w.usage_model || 'bundled'} />}
@@ -312,144 +313,150 @@ export default function ServicesScreen() {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      {/* Which account these resources belong to */}
-      <Group>
-        <ListRow
-          icon="user"
-          title="Account"
-          subtitle={accountId ? accountId.slice(0, 4) + '••••••••' : '-'}
-          mono
-        />
-      </Group>
-
-      {/* Resource mix: one glance at what this account runs */}
-      {resourceSlices.length > 0 && (
-        <Card style={styles.overviewCard}>
-          <View style={styles.overviewTop}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.overviewNum, { color: colors.text }]}>{totalResources}</Text>
-              <Text style={[styles.overviewLabel, { color: colors.textTertiary }]}>
-                {t('services.total_resources')}
-              </Text>
-            </View>
-            <Badge label={t('services.all_healthy')} variant="success" />
-          </View>
-
-          <ProportionBar slices={resourceSlices} height={8} />
-
-          <View style={styles.legendRow}>
-            {resourceSlices.map((s) => (
-              <View key={s.label} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: s.color }]} />
-                <Text style={[styles.legendText, { color: colors.textSecondary }]}>
-                  {s.label} {s.value}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Card>
-      )}
-
-      {/* Per-service counts */}
-      <View style={styles.grid}>
-        {perms.workers && serviceTile('code', t('services.workers'), workers.length, errors.workers)}
-        {perms.kv && serviceTile('database', 'KV', kvNamespaces.length, errors.kv)}
-        {perms.r2 && serviceTile('cloud-upload', 'R2', r2Buckets.length, errors.r2)}
-        {perms.pages && serviceTile('monitor', 'Pages', pages.length, errors.pages)}
-        {perms.d1 && serviceTile('database', 'D1', d1Dbs.length, errors.d1)}
-      </View>
-
-      {/* The other ~30 account-level products, which have no browser of their own here. */}
-      <Group style={{ marginTop: Spacing.md }}>
-        <ListRow
-          icon="grid"
-          title={t('products.all')}
-          subtitle={t('products.all_sub')}
-          onPress={() => router.push('/products' as any)}
-        />
-      </Group>
-
-      {/* One long scroll of five full lists was the old shape of this screen. */}
-      {total > PREVIEW && (
-        <SearchBar
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('services.search')}
-          style={{ marginTop: Spacing.md }}
-        />
-      )}
-
-      {sections.map((section) => {
-        if (!section.allowed) return null;
-        // While searching, a section with no hits is noise.
-        if (query && section.items.length === 0 && !section.error) return null;
-
-        const open = !!query || expanded.has(section.key);
-        const shown = open ? section.items : section.items.slice(0, PREVIEW);
-        const rest = section.items.length - shown.length;
-
-        return (
-          <View key={section.key}>
-            <SectionHeader
-              title={section.title}
-              action={
-                section.key === 'workers' ? (
-                  <TouchableOpacity
-                    onPress={() => setShowCreateWorker(true)}
-                    hitSlop={10}
-                    style={styles.createWorkerBtn}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('services.new_worker')}
-                  >
-                    <Icon name="plus" size={18} color={colors.primary} />
-                    <Text style={[styles.createWorkerText, { color: colors.primary }]}>
-                      {t('services.new_worker')}
-                    </Text>
-                  </TouchableOpacity>
-                ) : undefined
-              }
+      <View style={styles.inner}>
+        <M3Entrance index={0}>
+          <Group>
+            <ListRow
+              icon="user"
+              iconTone="primary"
+              title="Account"
+              subtitle={accountId ? accountId.slice(0, 4) + '••••••••' : '-'}
+              mono
             />
-            {section.error ? (
-              <Banner message={section.error} />
-            ) : section.items.length === 0 ? (
-              <EmptyState icon={section.emptyIcon} title={section.emptyTitle} />
-            ) : (
-              <Group>
-                {[
-                  ...shown.map((item) => item.node),
-                  rest > 0 ? (
-                    <ListRow
-                      key="more"
-                      title={t('services.show_all', { count: section.items.length })}
-                      onPress={() => setExpanded((prev) => new Set(prev).add(section.key))}
-                    />
-                  ) : null,
-                ].filter(Boolean)}
-              </Group>
-            )}
+          </Group>
+        </M3Entrance>
+
+        {resourceSlices.length > 0 && (
+          <M3Entrance index={1}>
+            <Card style={styles.overviewCard}>
+              <View style={styles.overviewTop}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.overviewNum, { color: colors.onSurface }]}>{totalResources}</Text>
+                  <Text style={[styles.overviewLabel, { color: colors.onSurfaceVariant }]}>
+                    {t('services.total_resources')}
+                  </Text>
+                </View>
+                <Badge label={t('services.all_healthy')} variant="success" />
+              </View>
+
+              <ProportionBar slices={resourceSlices} height={10} />
+
+              <View style={styles.legendRow}>
+                {resourceSlices.map((s) => (
+                  <View key={s.label} style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: s.color }]} />
+                    <Text style={[styles.legendText, { color: colors.onSurfaceVariant }]}>
+                      {s.label} {s.value}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </Card>
+          </M3Entrance>
+        )}
+
+        <M3Entrance index={2}>
+          <View style={styles.grid}>
+            {perms.workers && serviceTile('code', t('services.workers'), workers.length, errors.workers)}
+            {perms.kv && serviceTile('database', 'KV', kvNamespaces.length, errors.kv)}
+            {perms.r2 && serviceTile('cloud-upload', 'R2', r2Buckets.length, errors.r2)}
+            {perms.pages && serviceTile('monitor', 'Pages', pages.length, errors.pages)}
+            {perms.d1 && serviceTile('database', 'D1', d1Dbs.length, errors.d1)}
           </View>
-        );
-      })}
+        </M3Entrance>
 
-      {!perms.workers && !perms.kv && !perms.r2 && !perms.pages && (
-        <EmptyState icon="lock" title="No access" message="Your token does not have permission for any service. Create a new token with Account level permissions." />
-      )}
+        <M3Entrance index={3}>
+          <Group style={{ marginTop: Spacing.md }}>
+            <ListRow
+              icon="grid"
+              title={t('products.all')}
+              subtitle={t('products.all_sub')}
+              onPress={() => router.push('/products' as any)}
+            />
+          </Group>
+        </M3Entrance>
 
-      {accountId && (
-        <CreateWorkerSheet
-          visible={showCreateWorker}
-          accountId={accountId}
-          onClose={() => setShowCreateWorker(false)}
-          onCreated={(scriptName, openIde) => {
-            setShowCreateWorker(false);
-            fetchAll();
-            router.push({
-              pathname: (openIde ? '/worker-ide/[script]' : '/worker/[script]') as any,
-              params: { script: scriptName },
-            });
-          }}
-        />
-      )}
+        {total > PREVIEW && (
+          <SearchBar
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('services.search')}
+            style={{ marginTop: Spacing.md }}
+          />
+        )}
+
+        {sections.map((section, idx) => {
+          if (!section.allowed) return null;
+          if (query && section.items.length === 0 && !section.error) return null;
+
+          const open = !!query || expanded.has(section.key);
+          const shown = open ? section.items : section.items.slice(0, PREVIEW);
+          const rest = section.items.length - shown.length;
+
+          return (
+            <M3Entrance key={section.key} index={4 + idx}>
+              <SectionHeader
+                title={section.title}
+                action={
+                  section.key === 'workers' ? (
+                    <M3Pressable
+                      radius={Radius.full}
+                      onPress={() => setShowCreateWorker(true)}
+                      hitSlop={8}
+                      style={[styles.createWorkerBtn, { backgroundColor: colors.primaryContainer }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('services.new_worker')}
+                    >
+                      <Icon name="plus" size={16} color={colors.onPrimaryContainer} />
+                      <Text style={[styles.createWorkerText, { color: colors.onPrimaryContainer }]}>
+                        {t('services.new_worker')}
+                      </Text>
+                    </M3Pressable>
+                  ) : undefined
+                }
+              />
+              {section.error ? (
+                <Banner message={section.error} />
+              ) : section.items.length === 0 ? (
+                <EmptyState icon={section.emptyIcon} title={section.emptyTitle} />
+              ) : (
+                <Group>
+                  {[
+                    ...shown.map((item) => item.node),
+                    rest > 0 ? (
+                      <ListRow
+                        key="more"
+                        title={t('services.show_all', { count: section.items.length })}
+                        onPress={() => setExpanded((prev) => new Set(prev).add(section.key))}
+                      />
+                    ) : null,
+                  ].filter(Boolean)}
+                </Group>
+              )}
+            </M3Entrance>
+          );
+        })}
+
+        {!perms.workers && !perms.kv && !perms.r2 && !perms.pages && (
+          <EmptyState icon="lock" title="No access" message="Your token does not have permission for any service. Create a new token with Account level permissions." />
+        )}
+
+        {accountId && (
+          <CreateWorkerSheet
+            visible={showCreateWorker}
+            accountId={accountId}
+            onClose={() => setShowCreateWorker(false)}
+            onCreated={(scriptName, openIde) => {
+              setShowCreateWorker(false);
+              fetchAll();
+              router.push({
+                pathname: (openIde ? '/worker-ide/[script]' : '/worker/[script]') as any,
+                params: { script: scriptName },
+              });
+            }}
+          />
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -457,15 +464,16 @@ export default function ServicesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl },
+  inner: { width: '100%', maxWidth: 960, alignSelf: 'center' },
 
   overviewCard: { gap: Spacing.md, marginTop: Spacing.sm },
   overviewTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  overviewNum: { fontSize: 26, fontWeight: '400', letterSpacing: -0.5 },
-  overviewLabel: { fontSize: FontSize.xs, marginTop: 2 },
+  overviewNum: { fontSize: 28, fontWeight: '700', letterSpacing: -0.6, fontVariant: ['tabular-nums'] },
+  overviewLabel: { fontSize: FontSize.xs, marginTop: 2, fontWeight: '500' },
   legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: FontSize.xs },
+  legendText: { fontSize: FontSize.xs, fontWeight: '500' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.sm },
   tile: {
@@ -474,24 +482,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    minHeight: 58,
+    minHeight: 64,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: Radius.lg,
-    borderWidth: 1,
   },
   tileBody: { flex: 1, gap: 2 },
-  tileTitle: { fontSize: FontSize.md, fontWeight: '500' },
-  tileCount: { fontSize: FontSize.sm },
+  tileTitle: { fontSize: FontSize.md, fontWeight: '600' },
+  tileCount: { fontSize: FontSize.sm, fontVariant: ['tabular-nums'] },
   createWorkerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
   },
   createWorkerText: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontSize: FontSize.xs,
+    fontWeight: '700',
   },
 });

@@ -1,25 +1,43 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  StyleSheet, View, Text, FlatList, TextInput, TouchableOpacity, ScrollView,
-  KeyboardAvoidingView, ActivityIndicator, Alert, Animated,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import Svg, { Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
 import { AiPaywall } from '@/components/ui/ai-paywall';
+import { Button } from '@/components/ui/button';
+import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
 import { promptReport } from '@/components/ui/error-report';
 import { useAuth } from '@/contexts/auth';
-import { Spacing, FontSize, Radius, CF } from '@/constants/theme';
+import { FontSize, Radius, Spacing } from '@/constants/theme';
 import * as ai from '@/services/ai';
 import { useAiQuota } from '@/services/ai-subscription';
 import { ACTION_REGISTRY, executeAction, missingContext } from '@/services/ai-actions';
 import i18n from '@/i18n';
 
 const AUTO_APPLY_KEY = 'ai_chat_auto_apply';
-const AI_PURPLE = '#8B5CF6';
 
 type ActionStatus = 'pending' | 'applying' | 'applied' | 'rejected' | 'error';
 
@@ -36,52 +54,70 @@ interface ChatItem {
   actions?: ActionItem[];
 }
 
-// Time-based so ids stay unique even when the module is re-evaluated mid-conversation.
 let seq = 0;
 const nextId = () => `m${Date.now().toString(36)}-${++seq}`;
 
-/** Orange-to-purple disc used for the assistant's avatar, the hero and the send button. */
 function Orb({ size, children }: { size: number; children?: React.ReactNode }) {
+  const { colors } = useTheme();
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Defs>
-          <LinearGradient id="orb" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={CF.orange} />
-            <Stop offset="1" stopColor={AI_PURPLE} />
+          <LinearGradient id="m3Orb" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={colors.primary} />
+            <Stop offset="1" stopColor={colors.tertiary} />
           </LinearGradient>
         </Defs>
-        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill="url(#orb)" />
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill="url(#m3Orb)" />
       </Svg>
       {children}
     </View>
   );
 }
 
-/** Three dots pulsing in sequence while the assistant is working. */
-function TypingDots({ color }: { color: string }) {
-  const dots = useRef([new Animated.Value(0.3), new Animated.Value(0.3), new Animated.Value(0.3)]).current;
+function TypingDot({ color, delay }: { color: string; delay: number }) {
+  const opacity = useSharedValue(0.3);
+  const scale = useSharedValue(0.85);
 
   useEffect(() => {
-    const loops = dots.map((v, i) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(i * 160),
-          Animated.timing(v, { toValue: 1, duration: 320, useNativeDriver: true }),
-          Animated.timing(v, { toValue: 0.3, duration: 320, useNativeDriver: true }),
-          Animated.delay((2 - i) * 160),
-        ])
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 360, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.3, { duration: 360, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        false
       )
     );
-    loops.forEach((l) => l.start());
-    return () => loops.forEach((l) => l.stop());
-  }, [dots]);
+    scale.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 360, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.85, { duration: 360, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        false
+      )
+    );
+  }, [delay, opacity, scale]);
 
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
+  return <Animated.View style={[styles.dot, { backgroundColor: color }, style]} />;
+}
+
+function TypingDots({ color }: { color: string }) {
   return (
     <View style={styles.dots}>
-      {dots.map((v, i) => (
-        <Animated.View key={i} style={[styles.dot, { backgroundColor: color, opacity: v }]} />
-      ))}
+      <TypingDot color={color} delay={0} />
+      <TypingDot color={color} delay={140} />
+      <TypingDot color={color} delay={280} />
     </View>
   );
 }
@@ -102,15 +138,29 @@ export default function AiChatScreen() {
   const listRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    const SecureStore = require('expo-secure-store');
-    SecureStore.getItemAsync(AUTO_APPLY_KEY).then((v: string | null) => setAutoApply(v === 'true'));
+    if (Platform.OS === 'web') {
+      try {
+        setAutoApply(localStorage.getItem(AUTO_APPLY_KEY) === 'true');
+      } catch {}
+    } else {
+      const SecureStore = require('expo-secure-store');
+      SecureStore.getItemAsync(AUTO_APPLY_KEY)
+        .then((v: string | null) => setAutoApply(v === 'true'))
+        .catch(() => {});
+    }
   }, []);
 
   const toggleAutoApply = () => {
     const value = !autoApply;
     setAutoApply(value);
-    const SecureStore = require('expo-secure-store');
-    SecureStore.setItemAsync(AUTO_APPLY_KEY, value ? 'true' : 'false').catch(() => {});
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.setItem(AUTO_APPLY_KEY, value ? 'true' : 'false');
+      } catch {}
+    } else {
+      const SecureStore = require('expo-secure-store');
+      SecureStore.setItemAsync(AUTO_APPLY_KEY, value ? 'true' : 'false').catch(() => {});
+    }
   };
 
   const context: ai.ChatContext = {
@@ -136,7 +186,6 @@ export default function AiChatScreen() {
       const msgText = e?.response?.data?.errors?.[0]?.message ?? e?.message ?? t('ai_chat.action_error');
       setActionStatus(msgId, proposal.id, 'error', msgText);
     }
-  // context is rebuilt every render from stable ids, so listing its fields is enough
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context.zoneId, context.accountId, t]);
 
@@ -175,8 +224,6 @@ export default function AiChatScreen() {
         }
       }
     } catch (e: any) {
-      // The message never reached the assistant: take it back out of the
-      // thread and return the text to the input so it can be sent again.
       setItems((prev) => prev.filter((m) => m.id !== userItem.id));
       setInput(text);
       if (e?.code === 'quota' || e?.code === 'auth') {
@@ -198,13 +245,32 @@ export default function AiChatScreen() {
     return (
       <View
         key={a.proposal.id}
-        style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: danger ? colors.error + '55' : colors.borderLight }]}
+        style={[
+          styles.actionCard,
+          { backgroundColor: danger ? colors.errorContainer : colors.surfaceContainerLow },
+        ]}
       >
         <View style={styles.actionHead}>
-          <View style={[styles.actionIcon, { backgroundColor: danger ? colors.error + '14' : colors.surfaceSecondary }]}>
-            <Icon name={danger ? 'warning' : 'zap'} size={14} color={danger ? colors.error : colors.text} />
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: danger ? colors.error + '22' : colors.secondaryContainer },
+            ]}
+          >
+            <Icon
+              name={danger ? 'warning' : 'zap'}
+              size={15}
+              color={danger ? colors.onErrorContainer : colors.onSecondaryContainer}
+            />
           </View>
-          <Text style={[styles.actionLabel, { color: colors.text }]}>{a.proposal.label}</Text>
+          <Text
+            style={[
+              styles.actionLabel,
+              { color: danger ? colors.onErrorContainer : colors.onSurface },
+            ]}
+          >
+            {a.proposal.label}
+          </Text>
         </View>
 
         {missing && (
@@ -215,22 +281,22 @@ export default function AiChatScreen() {
 
         {a.status === 'pending' && !missing && (
           <View style={styles.actionButtons}>
-            <TouchableOpacity
-              onPress={() => setActionStatus(msgId, a.proposal.id, 'rejected')}
-              style={[styles.actionBtn, { borderWidth: 1, borderColor: colors.border }]}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>{t('common.dismiss')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => applyAction(msgId, a.proposal)}
-              style={[styles.actionBtn, { backgroundColor: danger ? colors.error : colors.primary }]}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.actionBtnText, { color: '#FFF' }]}>
-                {danger ? t('ai_chat.confirm_destructive') : t('common.apply')}
-              </Text>
-            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Button
+                title={t('common.dismiss')}
+                variant="tonal"
+                size="sm"
+                onPress={() => setActionStatus(msgId, a.proposal.id, 'rejected')}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button
+                title={danger ? t('ai_chat.confirm_destructive') : t('common.apply')}
+                variant={danger ? 'danger' : 'primary'}
+                size="sm"
+                onPress={() => applyAction(msgId, a.proposal)}
+              />
+            </View>
           </View>
         )}
         {a.status === 'applying' && <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: Spacing.sm }} />}
@@ -241,7 +307,7 @@ export default function AiChatScreen() {
           </View>
         )}
         {a.status === 'rejected' && (
-          <Text style={[styles.actionMeta, { color: colors.textTertiary }]}>{t('ai_chat.dismissed')}</Text>
+          <Text style={[styles.actionMeta, { color: colors.onSurfaceVariant }]}>{t('ai_chat.dismissed')}</Text>
         )}
         {a.status === 'error' && (
           <Text style={[styles.actionMeta, { color: colors.error }]}>{a.error}</Text>
@@ -253,25 +319,25 @@ export default function AiChatScreen() {
   const renderItem = ({ item }: { item: ChatItem }) => {
     if (item.role === 'user') {
       return (
-        <View style={styles.userRow}>
-          <View style={[styles.userBubble, { backgroundColor: colors.primary }]}>
-            <Text style={styles.userText}>{item.content}</Text>
+        <M3Entrance index={0} distance={8} style={styles.userRow}>
+          <View style={[styles.userBubble, { backgroundColor: colors.primaryContainer }]}>
+            <Text style={[styles.userText, { color: colors.onPrimaryContainer }]}>{item.content}</Text>
           </View>
-        </View>
+        </M3Entrance>
       );
     }
     return (
-      <View style={styles.assistantRow}>
-        <Orb size={28}><Icon name="sparkles" size={14} color="#FFF" /></Orb>
+      <M3Entrance index={0} distance={8} style={styles.assistantRow}>
+        <Orb size={32}><Icon name="sparkles" size={15} color={colors.onPrimary} /></Orb>
         <View style={styles.assistantCol}>
           {!!item.content && (
-            <View style={[styles.assistantBubble, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-              <Text style={[styles.assistantText, { color: colors.text }]}>{item.content}</Text>
+            <View style={[styles.assistantBubble, { backgroundColor: colors.surfaceContainerHigh }]}>
+              <Text style={[styles.assistantText, { color: colors.onSurface }]}>{item.content}</Text>
             </View>
           )}
           {item.actions?.map((a) => renderAction(item.id, a))}
         </View>
-      </View>
+      </M3Entrance>
     );
   };
 
@@ -279,12 +345,14 @@ export default function AiChatScreen() {
     return (
       <>
         <View style={[styles.lockedContainer, { backgroundColor: colors.background }]}>
-          <Orb size={76}><Icon name="sparkles" size={34} color="#FFF" /></Orb>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>{t('ai_chat.locked_title')}</Text>
-          <Text style={[styles.heroSub, { color: colors.textSecondary }]}>{t('ai_chat.locked_body')}</Text>
-          <TouchableOpacity style={[styles.unlockBtn, { backgroundColor: colors.primary }]} onPress={() => setShowPaywall(true)}>
-            <Text style={styles.unlockBtnText}>{t('ai_plan.upgrade')}</Text>
-          </TouchableOpacity>
+          <M3Entrance index={0} style={styles.lockedInner}>
+            <Orb size={80}><Icon name="sparkles" size={34} color={colors.onPrimary} /></Orb>
+            <Text style={[styles.heroTitle, { color: colors.onSurface }]}>{t('ai_chat.locked_title')}</Text>
+            <Text style={[styles.heroSub, { color: colors.onSurfaceVariant }]}>{t('ai_chat.locked_body')}</Text>
+            <View style={{ marginTop: Spacing.xl, minWidth: 200 }}>
+              <Button title={t('ai_plan.upgrade')} onPress={() => setShowPaywall(true)} size="lg" />
+            </View>
+          </M3Entrance>
         </View>
         <AiPaywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
       </>
@@ -304,116 +372,138 @@ export default function AiChatScreen() {
     <>
       <KeyboardAvoidingView
         style={[styles.container, { backgroundColor: colors.background }]}
-        // Edge-to-edge on Android means the window no longer resizes for the
-        // keyboard, so the input has to be lifted here on both platforms.
         behavior="padding"
         keyboardVerticalOffset={headerHeight}
       >
-        {items.length === 0 ? (
-          <ScrollView
-            contentContainerStyle={styles.hero}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <Orb size={76}><Icon name="sparkles" size={34} color="#FFF" /></Orb>
-            <Text style={[styles.heroTitle, { color: colors.text }]}>{t('ai_chat.hero_title')}</Text>
-            <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
-              {zoneName ? t('ai_chat.empty_zone', { zone: zoneName }) : t('ai_chat.hero_sub')}
-            </Text>
+        <View style={styles.inner}>
+          {items.length === 0 ? (
+            <ScrollView
+              contentContainerStyle={styles.hero}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <M3Entrance index={0} style={{ alignItems: 'center' }}>
+                <Orb size={80}><Icon name="sparkles" size={34} color={colors.onPrimary} /></Orb>
+                <Text style={[styles.heroTitle, { color: colors.onSurface }]}>{t('ai_chat.hero_title')}</Text>
+                <Text style={[styles.heroSub, { color: colors.onSurfaceVariant }]}>
+                  {zoneName ? t('ai_chat.empty_zone', { zone: zoneName }) : t('ai_chat.hero_sub')}
+                </Text>
+              </M3Entrance>
 
-            <View style={styles.suggestions}>
-              {suggestions.map((s) => (
-                <TouchableOpacity
-                  key={s.text}
-                  style={[styles.suggestion, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
-                  onPress={() => send(s.text)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.suggestionIcon, { backgroundColor: colors.surfaceSecondary }]}>
-                    <Icon name={s.icon} size={16} color={colors.text} />
+              <View style={styles.suggestions}>
+                {suggestions.map((s, idx) => (
+                  <M3Entrance key={s.text} index={idx + 1} style={styles.suggestionSlot}>
+                    <M3Pressable
+                      radius={Radius.lg}
+                      style={[styles.suggestion, { backgroundColor: colors.surfaceContainerLow }]}
+                      onPress={() => send(s.text)}
+                      accessibilityRole="button"
+                    >
+                      <View style={[styles.suggestionIcon, { backgroundColor: colors.secondaryContainer }]}>
+                        <Icon name={s.icon} size={17} color={colors.onSecondaryContainer} />
+                      </View>
+                      <Text style={[styles.suggestionText, { color: colors.onSurface }]}>{s.text}</Text>
+                    </M3Pressable>
+                  </M3Entrance>
+                ))}
+              </View>
+            </ScrollView>
+          ) : (
+            <FlatList
+              ref={listRef}
+              data={items}
+              keyExtractor={(i) => i.id}
+              renderItem={renderItem}
+              contentContainerStyle={styles.list}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+              ListFooterComponent={sending ? (
+                <View style={styles.assistantRow}>
+                  <Orb size={32}><Icon name="sparkles" size={15} color={colors.onPrimary} /></Orb>
+                  <View style={[styles.assistantBubble, { backgroundColor: colors.surfaceContainerHigh }]}>
+                    <TypingDots color={colors.primary} />
                   </View>
-                  <Text style={[styles.suggestionText, { color: colors.text }]}>{s.text}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        ) : (
-          <FlatList
-            ref={listRef}
-            data={items}
-            keyExtractor={(i) => i.id}
-            renderItem={renderItem}
-            contentContainerStyle={styles.list}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-            ListFooterComponent={sending ? (
-              <View style={styles.assistantRow}>
-                <Orb size={28}><Icon name="sparkles" size={14} color="#FFF" /></Orb>
-                <View style={[styles.assistantBubble, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-                  <TypingDots color={colors.textSecondary} />
                 </View>
-              </View>
-            ) : null}
-          />
-        )}
-
-        {/* Composer */}
-        <View style={styles.composerWrap}>
-          <View style={styles.chipRow}>
-            {!!zoneName && (
-              <View style={[styles.chip, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-                <Icon name="globe" size={12} color={colors.textSecondary} />
-                <Text style={[styles.chipText, { color: colors.textSecondary }]} numberOfLines={1}>{zoneName}</Text>
-              </View>
-            )}
-            <TouchableOpacity
-              onPress={toggleAutoApply}
-              activeOpacity={0.7}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: autoApply }}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: autoApply ? colors.primary + '18' : colors.surface,
-                  borderColor: autoApply ? colors.primary + '55' : colors.borderLight,
-                },
-              ]}
-            >
-              <Icon name="zap" size={12} color={autoApply ? colors.primary : colors.textSecondary} />
-              <Text style={[styles.chipText, { color: autoApply ? colors.primary : colors.textSecondary }]} numberOfLines={1}>
-                {t('ai_chat.auto_apply')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.composer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder={t('ai_chat.placeholder')}
-              placeholderTextColor={colors.textTertiary}
-              value={input}
-              onChangeText={setInput}
-              multiline
-              editable={!sending}
+              ) : null}
             />
-            <TouchableOpacity
-              onPress={() => send()}
-              disabled={!canSend}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={t('ai_chat.send')}
-            >
-              {canSend ? (
-                <Orb size={40}><Icon name="send" size={16} color="#FFF" /></Orb>
-              ) : (
-                <View style={[styles.sendIdle, { backgroundColor: colors.surfaceSecondary }]}>
-                  {sending
-                    ? <ActivityIndicator size="small" color={colors.textSecondary} />
-                    : <Icon name="send" size={16} color={colors.textTertiary} />}
+          )}
+
+          {/* Composer */}
+          <View style={styles.composerWrap}>
+            <View style={styles.chipRow}>
+              {!!zoneName && (
+                <View style={[styles.chip, { backgroundColor: colors.surfaceContainer }]}>
+                  <Icon name="globe" size={13} color={colors.onSurfaceVariant} />
+                  <Text style={[styles.chipText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
+                    {zoneName}
+                  </Text>
                 </View>
               )}
-            </TouchableOpacity>
+              <M3Pressable
+                onPress={toggleAutoApply}
+                radius={Radius.sm}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: autoApply }}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: autoApply ? colors.secondaryContainer : colors.surfaceContainer,
+                  },
+                ]}
+              >
+                <Icon
+                  name="zap"
+                  size={13}
+                  color={autoApply ? colors.onSecondaryContainer : colors.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.chipText,
+                    { color: autoApply ? colors.onSecondaryContainer : colors.onSurfaceVariant },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {t('ai_chat.auto_apply')}
+                </Text>
+              </M3Pressable>
+            </View>
+
+            <View style={[styles.composer, { backgroundColor: colors.surfaceContainerHigh }]}>
+              <TextInput
+                style={[styles.input, { color: colors.onSurface }]}
+                placeholder={t('ai_chat.placeholder')}
+                placeholderTextColor={colors.onSurfaceVariant}
+                value={input}
+                onChangeText={setInput}
+                multiline
+                editable={!sending}
+              />
+              <M3Pressable
+                onPress={() => send()}
+                disabled={!canSend}
+                radius={22}
+                scaleTo={0.92}
+                accessibilityRole="button"
+                accessibilityLabel={t('ai_chat.send')}
+                style={[
+                  styles.sendBtn,
+                  {
+                    backgroundColor: canSend ? colors.primary : colors.surfaceContainerHighest,
+                  },
+                ]}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color={colors.onSurfaceVariant} />
+                ) : (
+                  <Icon
+                    name="send"
+                    size={17}
+                    color={canSend ? colors.onPrimary : colors.onSurfaceVariant}
+                  />
+                )}
+              </M3Pressable>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -424,8 +514,8 @@ export default function AiChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  inner: { flex: 1, width: '100%', maxWidth: 820, alignSelf: 'center' },
 
-  // Empty state
   hero: {
     flexGrow: 1,
     alignItems: 'center',
@@ -434,9 +524,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxl,
   },
   heroTitle: {
-    fontSize: FontSize.xxl,
-    fontWeight: '500',
-    letterSpacing: -0.3,
+    fontSize: 26,
+    fontWeight: '700',
+    letterSpacing: -0.5,
     textAlign: 'center',
     marginTop: Spacing.lg,
   },
@@ -445,101 +535,93 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textAlign: 'center',
     marginTop: Spacing.xs,
-    maxWidth: 300,
+    maxWidth: 320,
   },
   suggestions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
     marginTop: Spacing.xxl,
+    width: '100%',
   },
-  suggestion: {
+  suggestionSlot: {
     flexBasis: '47%',
     flexGrow: 1,
+  },
+  suggestion: {
     gap: Spacing.sm,
     padding: Spacing.md,
     borderRadius: Radius.lg,
-    borderWidth: 1,
+    minHeight: 96,
   },
   suggestionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  suggestionText: { fontSize: FontSize.sm, lineHeight: 18 },
+  suggestionText: { fontSize: FontSize.sm, fontWeight: '500', lineHeight: 19 },
 
-  // Messages
   list: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.md },
   userRow: { alignItems: 'flex-end', marginBottom: Spacing.md },
   userBubble: {
     maxWidth: '82%',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingVertical: 12,
+    borderRadius: 22,
     borderBottomRightRadius: 6,
   },
-  userText: { color: '#FFF', fontSize: FontSize.md, lineHeight: 21 },
+  userText: { fontSize: FontSize.md, lineHeight: 21 },
   assistantRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.md },
   assistantCol: { flex: 1, alignItems: 'flex-start', gap: Spacing.sm },
   assistantBubble: {
     maxWidth: '92%',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingVertical: 12,
+    borderRadius: 22,
     borderTopLeftRadius: 6,
-    borderWidth: 1,
   },
   assistantText: { fontSize: FontSize.md, lineHeight: 22 },
-  dots: { flexDirection: 'row', gap: 5, paddingVertical: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4 },
+  dots: { flexDirection: 'row', gap: 6, paddingVertical: 6 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
 
-  // Proposed actions
   actionCard: {
     alignSelf: 'stretch',
     padding: Spacing.md,
     borderRadius: Radius.lg,
-    borderWidth: 1,
   },
   actionHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  actionIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  actionLabel: { fontSize: FontSize.sm, fontWeight: '500', flex: 1 },
+  actionIcon: { width: 32, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  actionLabel: { fontSize: FontSize.sm, fontWeight: '600', flex: 1 },
   actionMeta: { fontSize: FontSize.xs, marginTop: Spacing.sm },
   actionResult: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm },
   actionButtons: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
-  actionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', height: 36, borderRadius: Radius.full },
-  actionBtnText: { fontSize: FontSize.sm, fontWeight: '600' },
 
-  // Composer
-  composerWrap: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.sm, gap: Spacing.sm },
+  composerWrap: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md, gap: Spacing.sm },
   chipRow: { flexDirection: 'row', gap: Spacing.sm },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    height: 28,
-    borderRadius: Radius.full,
-    borderWidth: 1,
+    gap: 6,
+    paddingHorizontal: Spacing.md,
+    height: 32,
+    borderRadius: Radius.sm,
     flexShrink: 1,
   },
-  chipText: { fontSize: FontSize.xs, fontWeight: '500', flexShrink: 1 },
+  chipText: { fontSize: FontSize.xs, fontWeight: '600', flexShrink: 1 },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: Spacing.sm,
     paddingLeft: Spacing.lg,
-    paddingRight: 6,
+    paddingRight: 8,
     paddingVertical: 6,
-    borderRadius: 26,
-    borderWidth: 1,
+    borderRadius: 28,
   },
-  input: { flex: 1, fontSize: FontSize.md, maxHeight: 110, minHeight: 40, paddingVertical: 9 },
-  sendIdle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, fontSize: FontSize.md, maxHeight: 120, minHeight: 42, paddingVertical: 9 },
+  sendBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
 
-  // Locked
   lockedContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
-  unlockBtn: { paddingHorizontal: Spacing.xxl, height: 46, justifyContent: 'center', borderRadius: Radius.full, marginTop: Spacing.xl },
-  unlockBtnText: { color: '#FFF', fontWeight: '600', fontSize: FontSize.md },
+  lockedInner: { alignItems: 'center', maxWidth: 360 },
 });

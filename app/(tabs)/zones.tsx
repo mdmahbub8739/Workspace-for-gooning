@@ -1,16 +1,20 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  StyleSheet, View, Text, FlatList, RefreshControl, TextInput, TouchableOpacity, Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/use-theme';
 import { Icon } from '@/components/ui/icon';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { SearchBar } from '@/components/ui/kit';
+import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Spacing, FontSize, Radius } from '@/constants/theme';
+import { FontSize, Radius, Spacing } from '@/constants/theme';
 import * as api from '@/services/cloudflare';
 import { Zone } from '@/services/types';
 
@@ -65,120 +69,121 @@ export default function ZonesScreen() {
   };
 
   const renderZone = ({ item, index }: { item: Zone; index: number }) => {
-    const statusColor = item.status === 'active' ? colors.success : item.status === 'pending' ? colors.warning : colors.error;
+    const isActive = item.status === 'active';
+    const isPending = item.status === 'pending';
+    const statusColor = isActive ? colors.success : isPending ? colors.warning : colors.error;
+    const iconBg = isActive ? colors.secondaryContainer : isPending ? colors.warningContainer : colors.errorContainer;
+    const iconInk = isActive ? colors.onSecondaryContainer : isPending ? colors.onWarningContainer : colors.onErrorContainer;
+
+    const metaParts = [
+      `${item.name_servers?.length ?? 0} NS`,
+      item.plan.name,
+      item.account.name ? maskName(item.account.name) : null,
+    ].filter(Boolean);
+
     return (
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={() => router.push(`/zone/${item.id}`)}
-      >
-        <View style={[styles.zoneCard, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-          <View style={[styles.zoneIconWrap, { backgroundColor: colors.surfaceSecondary }]}>
-            <Icon name="globe" size={18} color={colors.text} />
+      <M3Entrance index={Math.min(index, 8)}>
+        <M3Pressable
+          radius={Radius.lg}
+          onPress={() => router.push(`/zone/${item.id}`)}
+          style={[styles.zoneCard, { backgroundColor: colors.surfaceContainerLow }]}
+          accessibilityRole="button"
+          accessibilityLabel={item.name}
+        >
+          <View style={[styles.zoneIconWrap, { backgroundColor: iconBg }]}>
+            <Icon name="globe" size={20} color={iconInk} />
           </View>
-          <View style={{ flex: 1 }}>
+
+          <View style={{ flex: 1, gap: 3 }}>
             <View style={styles.zoneNameRow}>
-              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-              <Text style={[styles.zoneName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+              <Text style={[styles.zoneName, { color: colors.onSurface }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={[styles.statusText, { color: statusColor }]}>
+                {item.status}
+              </Text>
             </View>
-            <Text style={[styles.zoneInfo, { color: colors.textTertiary }]} numberOfLines={1}>
-              {item.plan.name}{item.account.name ? ` · ${maskName(item.account.name)}` : ''}
+
+            <Text style={[styles.zoneInfo, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
+              {metaParts.join(' · ')}
             </Text>
-            <View style={styles.zoneFooter}>
-              <View style={[styles.metaPill, { backgroundColor: colors.surfaceSecondary }]}>
-                <Icon name="dns" size={11} color={colors.textTertiary} />
-                <Text style={[styles.metaPillText, { color: colors.textSecondary }]}>
-                  {item.name_servers?.length ?? 0} NS
-                </Text>
-              </View>
-              {item.development_mode > 0 && (
-                <View style={[styles.metaPill, { backgroundColor: colors.warning + '15' }]}>
-                  <Icon name="developer-mode" size={11} color={colors.warning} />
-                  <Text style={[styles.metaPillText, { color: colors.warning }]}>{t('zones.dev_mode')}</Text>
-                </View>
-              )}
-              {item.paused && (
-                <View style={[styles.metaPill, { backgroundColor: colors.error + '15' }]}>
-                  <Text style={[styles.metaPillText, { color: colors.error }]}>{t('zones.paused')}</Text>
-                </View>
-              )}
-            </View>
+
+            {(item.development_mode > 0 || item.paused) && (
+              <Text style={[styles.zoneFlags, { color: item.paused ? colors.error : colors.warning }]} numberOfLines={1}>
+                {[
+                  item.development_mode > 0 ? t('zones.dev_mode') : null,
+                  item.paused ? t('zones.paused') : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            )}
           </View>
-          <Icon name="chevron-right" size={18} color={colors.textTertiary} />
-        </View>
-      </TouchableOpacity>
+
+          <Icon name="chevron-right" size={18} color={colors.onSurfaceVariant} />
+        </M3Pressable>
+      </M3Entrance>
     );
   };
 
-  if (loading) {
+  if (loading && zones.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, padding: Spacing.lg }]}>
-        <SkeletonRows count={7} />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.inner, { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm }]}>
+          <SkeletonRows count={7} />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Search Bar */}
-      <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-        <Icon name="search" size={18} color={colors.textTertiary} />
-        <TextInput
-          style={[styles.searchInput, { color: colors.text }]}
-          placeholder={t('zones.search_placeholder')}
-          placeholderTextColor={colors.textTertiary}
-          value={search}
-          onChangeText={(text) => {
-            setSearch(text);
-            setPage(1);
-            setLoading(true);
-          }}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => { setSearch(''); setPage(1); }}>
-            <Icon name="close" size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <FlatList
-        data={zones}
-        keyExtractor={(item) => item.id}
-        renderItem={renderZone}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.3}
-        ListEmptyComponent={
-          <EmptyState
-            icon="cloud-off"
-            title={t('zones.no_zones')}
-            message={t('zones.no_zones_message')}
+      <View style={styles.inner}>
+        <View style={styles.searchWrap}>
+          <SearchBar
+            value={search}
+            onChangeText={(text) => {
+              setSearch(text);
+              setPage(1);
+            }}
+            placeholder={t('zones.search_placeholder')}
           />
-        }
-      />
+        </View>
+
+        <FlatList
+          data={zones}
+          keyExtractor={(item) => item.id}
+          renderItem={renderZone}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.3}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <EmptyState
+              icon="cloud-off"
+              title={t('zones.no_zones')}
+              message={t('zones.no_zones_message')}
+            />
+          }
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    gap: Spacing.sm,
-  },
-  searchInput: {
+  inner: {
     flex: 1,
-    fontSize: FontSize.md,
-    paddingVertical: Spacing.md,
+    width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center',
+  },
+  searchWrap: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.md,
   },
   list: {
     paddingHorizontal: Spacing.lg,
@@ -188,54 +193,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 14,
     borderRadius: Radius.lg,
-    borderWidth: 1,
     marginBottom: Spacing.sm,
+    minHeight: 72,
   },
   zoneIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   zoneNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
   },
   zoneName: {
     fontSize: FontSize.md,
-    fontWeight: '500',
+    fontWeight: '600',
     flex: 1,
   },
+  statusText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
   zoneInfo: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
   },
-  zoneFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  metaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  metaPillText: {
-    fontSize: 10,
-    fontWeight: '500',
+  zoneFlags: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+    marginTop: 1,
   },
 });

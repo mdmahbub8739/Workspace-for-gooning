@@ -4,9 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { loadLanguage } from '@/i18n';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { AuthProvider } from '@/contexts/auth';
 import { ThemeProvider, useThemeContext } from '@/contexts/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { Platform } from 'react-native';
 import { LockGate } from '@/components/ui/lock-gate';
 import { applyScreenshotBlock } from '@/services/app-lock';
@@ -18,7 +19,6 @@ import { refreshQuota } from '@/services/ai-subscription';
 import { syncMonitoring } from '@/services/monitor-task';
 import { track } from '@/services/analytics';
 import { checkPlayUpdate } from '@/services/play-update';
-import { CF, Colors } from '@/constants/theme';
 import { installGlobalErrorLog } from '@/services/error-log';
 import { ErrorScreen } from '@/components/ui/error-screen';
 
@@ -27,43 +27,38 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
   return <ErrorScreen error={error} retry={retry} />;
 }
 
-// Headers share the canvas colour, so a screen reads as one surface with cards on it.
-const CFLightTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: CF.orange,
-    background: Colors.light.background,
-    card: Colors.light.background,
-    text: Colors.light.text,
-    border: Colors.light.border,
-  },
-};
-
-const CFDarkTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    primary: CF.orange,
-    background: Colors.dark.background,
-    card: Colors.dark.background,
-    text: Colors.dark.text,
-    border: Colors.dark.border,
-  },
-};
-
 function AppContent() {
   const { resolved } = useThemeContext();
+  const { colors } = useTheme();
+
+  const navTheme = useMemo(() => {
+    const base = resolved === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.background,
+        text: colors.onSurface,
+        border: colors.outlineVariant,
+        notification: colors.primary,
+      },
+    };
+  }, [resolved, colors]);
 
   return (
-    <NavThemeProvider value={resolved === 'dark' ? CFDarkTheme : CFLightTheme}>
+    <NavThemeProvider value={navTheme}>
       <LockGate>
         <Stack
           screenOptions={{
             headerShown: false,
             headerShadowVisible: false,
-            headerTintColor: Colors[resolved].text,
-            headerTitleStyle: { fontSize: 18, fontWeight: '500' },
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.onSurface,
+            headerTitleStyle: { fontSize: 20, fontWeight: '600' },
+            contentStyle: { backgroundColor: colors.background },
+            animation: 'fade_from_bottom',
           }}
         >
           <Stack.Screen name="search" options={{ animation: 'fade', headerShown: true }} />
@@ -73,65 +68,65 @@ function AppContent() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen
             name="zone/[id]"
-            options={{ animation: 'slide_from_right' }}
+            options={{ animation: 'fade_from_bottom' }}
           />
-          <Stack.Screen name="about" options={{ animation: 'slide_from_right' }} />
-          <Stack.Screen name="changelog" options={{ animation: 'slide_from_right' }} />
-          <Stack.Screen name="accounts" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="monitoring" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="audit-logs" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="history" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="security" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="shortcuts" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="lists" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="lists/[list]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="registrar" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="billing" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="devices" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="turnstile" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="account-members" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="api-tokens" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="notifications" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="products" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="bulk" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="load-balancers" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="web-analytics" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="queues" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="workers-ai" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="ai-gateway" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="workflows" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="stream" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="images" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="pipelines" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="dns-firewall" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="address-maps" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="tunnels" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="tunnels/[tunnel]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="durable-objects" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="durable-objects/[namespace]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="hyperdrive" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="vectorize" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="vectorize/[index]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="autorag" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="autorag/[id]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="secrets-store" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="secrets-store/[store]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="workers-for-platforms" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="workers-for-platforms/[namespace]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="access-apps" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="access-apps/[app]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="access-idps" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="access-service-tokens" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="access-mtls" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="infra-targets" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="gateway-rules" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="d1/[db]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="kv/[ns]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="r2/[bucket]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="pages/[project]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="worker/[script]" options={{ animation: 'slide_from_right', headerShown: true }} />
-          <Stack.Screen name="worker-ide/[script]" options={{ animation: 'slide_from_right', headerShown: false }} />
-          <Stack.Screen name="worker-tail/[script]" options={{ animation: 'slide_from_right', headerShown: true }} />
+          <Stack.Screen name="about" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="changelog" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="accounts" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="monitoring" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="audit-logs" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="history" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="security" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="shortcuts" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="lists" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="lists/[list]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="registrar" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="billing" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="devices" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="turnstile" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="account-members" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="api-tokens" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="notifications" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="products" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="bulk" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="load-balancers" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="web-analytics" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="queues" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="workers-ai" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="ai-gateway" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="workflows" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="stream" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="images" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="pipelines" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="dns-firewall" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="address-maps" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="tunnels" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="tunnels/[tunnel]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="durable-objects" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="durable-objects/[namespace]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="hyperdrive" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="vectorize" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="vectorize/[index]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="autorag" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="autorag/[id]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="secrets-store" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="secrets-store/[store]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="workers-for-platforms" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="workers-for-platforms/[namespace]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="access-apps" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="access-apps/[app]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="access-idps" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="access-service-tokens" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="access-mtls" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="infra-targets" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="gateway-rules" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="d1/[db]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="kv/[ns]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="r2/[bucket]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="pages/[project]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="worker/[script]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
+          <Stack.Screen name="worker-ide/[script]" options={{ animation: 'fade_from_bottom', headerShown: false }} />
+          <Stack.Screen name="worker-tail/[script]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
         </Stack>
       </LockGate>
       <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />

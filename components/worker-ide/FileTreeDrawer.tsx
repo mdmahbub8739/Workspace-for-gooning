@@ -138,7 +138,7 @@ export function FileTreeDrawer({
           { paddingLeft: indent + 6 },
           isActive && [
             styles.activeFileRow,
-            { backgroundColor: colors.surfaceSecondary, borderColor: colors.border },
+            { backgroundColor: colors.secondaryContainer, borderColor: 'transparent' },
           ],
         ]}
       >
@@ -152,8 +152,8 @@ export function FileTreeDrawer({
             style={[
               styles.extBadge,
               {
-                backgroundColor: isActive ? colors.primary + '20' : colors.surfaceSecondary,
-                borderColor: isActive ? colors.primary + '55' : colors.borderLight,
+                backgroundColor: isActive ? colors.primaryContainer : colors.surfaceContainerHigh,
+                borderColor: 'transparent',
               },
             ]}
           >
@@ -201,9 +201,9 @@ export function FileTreeDrawer({
   };
 
   return (
-    <View style={[styles.drawer, { backgroundColor: colors.surface, borderRightColor: colors.borderLight }]}>
+    <View style={[styles.drawer, { backgroundColor: colors.surfaceContainerLow, borderRightColor: colors.outlineVariant + '55' }]}>
       {/* Top IDE Drawer Action Bar */}
-      <View style={[styles.toolbar, { borderBottomColor: colors.borderLight }]}>
+      <View style={[styles.toolbar, { borderBottomColor: colors.outlineVariant + '55' }]}>
         <TouchableOpacity
           onPress={() => {
             setSearchOpen((v) => !v);

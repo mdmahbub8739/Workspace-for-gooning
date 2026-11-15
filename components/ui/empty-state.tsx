@@ -1,6 +1,7 @@
 import { StyleSheet, View, Text } from 'react-native';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { M3Entrance } from '@/components/ui/m3-motion';
 import { FontSize, Spacing } from '@/constants/theme';
 
 interface EmptyStateProps {
@@ -13,13 +14,13 @@ export function EmptyState({ icon = 'info', title, message }: EmptyStateProps) {
   const { colors } = useTheme();
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.iconWrap, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-        <Icon name={icon} size={26} color={colors.textTertiary} />
+    <M3Entrance style={styles.container}>
+      <View style={[styles.iconWrap, { backgroundColor: colors.secondaryContainer }]}>
+        <Icon name={icon} size={28} color={colors.onSecondaryContainer} />
       </View>
-      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-      {message && <Text style={[styles.message, { color: colors.textTertiary }]}>{message}</Text>}
-    </View>
+      <Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text>
+      {message && <Text style={[styles.message, { color: colors.onSurfaceVariant }]}>{message}</Text>}
+    </M3Entrance>
   );
 }
 
@@ -31,22 +32,22 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1,
+    width: 72,
+    height: 72,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   title: {
-    fontSize: FontSize.md,
-    fontWeight: '500',
+    fontSize: FontSize.lg,
+    fontWeight: '600',
     textAlign: 'center',
   },
   message: {
     fontSize: FontSize.sm,
-    lineHeight: 19,
+    lineHeight: 20,
     textAlign: 'center',
+    maxWidth: 320,
   },
 });

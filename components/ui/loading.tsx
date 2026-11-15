@@ -12,9 +12,11 @@ export function Loading({ message, fullScreen = true }: LoadingProps) {
 
   return (
     <View style={[styles.container, fullScreen && styles.fullScreen, { backgroundColor: colors.background }]}>
-      <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[styles.pill, { backgroundColor: colors.primaryContainer }]}>
+        <ActivityIndicator size="large" color={colors.onPrimaryContainer} />
+      </View>
       {message && (
-        <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
+        <Text style={[styles.message, { color: colors.onSurfaceVariant }]}>{message}</Text>
       )}
     </View>
   );
@@ -29,8 +31,16 @@ const styles = StyleSheet.create({
   fullScreen: {
     flex: 1,
   },
+  pill: {
+    width: 64,
+    height: 64,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   message: {
     marginTop: Spacing.md,
     fontSize: FontSize.md,
+    fontWeight: '500',
   },
 });

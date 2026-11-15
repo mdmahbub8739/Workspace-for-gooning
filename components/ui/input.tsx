@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, TextInput, TextInputProps, View, Text } from 'react-native';
 import { Radius, Spacing, FontSize } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -7,20 +8,39 @@ interface InputProps extends TextInputProps {
   error?: string;
 }
 
-export function Input({ label, error, style, ...props }: InputProps) {
+export function Input({ label, error, style, onFocus, onBlur, ...props }: InputProps) {
   const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
 
   return (
     <View style={styles.wrapper}>
-      {label && <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>}
+      {label && (
+        <Text
+          style={[
+            styles.label,
+            { color: error ? colors.error : focused ? colors.primary : colors.onSurfaceVariant },
+          ]}
+        >
+          {label}
+        </Text>
+      )}
       <TextInput
         placeholderTextColor={colors.textTertiary}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
         style={[
           styles.input,
           {
-            backgroundColor: colors.inputBg,
-            color: colors.text,
-            borderColor: error ? colors.error : colors.border,
+            backgroundColor: colors.surfaceContainerHigh,
+            color: colors.onSurface,
+            borderColor: error ? colors.error : focused ? colors.primary : 'transparent',
+            borderWidth: 1.5,
           },
           style,
         ]}
@@ -32,14 +52,13 @@ export function Input({ label, error, style, ...props }: InputProps) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { gap: 4 },
-  label: { fontSize: FontSize.sm, fontWeight: '500', marginBottom: 2 },
+  wrapper: { gap: 6 },
+  label: { fontSize: FontSize.sm, fontWeight: '600', paddingHorizontal: 2 },
   input: {
-    borderWidth: 1,
     borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 13,
     fontSize: FontSize.md,
   },
-  error: { fontSize: FontSize.xs, marginTop: 2 },
+  error: { fontSize: FontSize.xs, marginTop: 2, paddingHorizontal: 2, fontWeight: '500' },
 });

@@ -10,7 +10,7 @@ import {
   ZoneAnalyticsDashboard, ZoneSetting, AccountMember,
 } from './types';
 
-const API_BASE = 'https://api.cloudflare.com/client/v4';
+const API_BASE = Platform.OS === 'web' ? '/__cf_api' : 'https://api.cloudflare.com/client/v4';
 const AUTH_KEY = 'cf_auth_config';
 
 // Platform-safe storage: SecureStore on native, localStorage on web
@@ -98,6 +98,13 @@ function createClient(config: AuthConfig): AxiosInstance {
     } else if (config.method === 'global_key' && config.globalKey && config.email) {
       req.headers['X-Auth-Email'] = config.email.replace(/\s+/g, '');
       req.headers['X-Auth-Key'] = config.globalKey.replace(/\s+/g, '');
+    }
+    if (Platform.OS === 'web' && typeof FormData !== 'undefined' && req.data instanceof FormData) {
+      if (typeof (req.headers as any).delete === 'function') {
+        (req.headers as any).delete('Content-Type');
+      } else {
+        delete (req.headers as any)['Content-Type'];
+      }
     }
     // Last step before the wire: wait for a free slot and for any 429 cooldown.
     await rateLimit.acquire();
@@ -252,7 +259,7 @@ export async function probePermissions(zoneId?: string, accountId?: string): Pro
       probe(() => get(`/zones/${zoneId}/rulesets/phases/http_request_firewall_custom/entrypoint`)).then((v) => ['firewall', v] as [keyof Permissions, boolean]),
       probe(() => get(`/zones/${zoneId}/settings/cache_level`)).then((v) => ['cache', v] as [keyof Permissions, boolean]),
       probe(async () => {
-        const res = await getClient().post('https://api.cloudflare.com/client/v4/graphql', {
+        const res = await getClient().post('/graphql', {
           query: `{ viewer { zones(filter: { zoneTag: "${zoneId}" }) { zoneTag } } }`,
         });
         if (res.data?.errors?.length) throw new Error('analytics denied');
@@ -897,7 +904,7 @@ export async function getZoneAnalytics(
     }
   }`;
 
-  const res = await getClient().post('https://api.cloudflare.com/client/v4/graphql', { query });
+  const res = await getClient().post('/graphql', { query });
   const groups = res.data?.data?.viewer?.zones?.[0]?.httpRequests1dGroups ?? [];
 
   // Aggregate totals from all groups

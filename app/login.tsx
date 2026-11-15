@@ -1,8 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  StyleSheet, View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView,
-  Platform, Alert, Modal, Linking,
+  Alert,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -17,7 +26,8 @@ import { Button } from '@/components/ui/button';
 import { BrandGradient, BrandMark } from '@/components/ui/brand';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Banner, Field, Group, ListRow } from '@/components/ui/kit';
-import { Spacing, FontSize, Radius } from '@/constants/theme';
+import { M3_SPRING, M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
+import { FontSize, Radius, Spacing } from '@/constants/theme';
 import { AuthMethod } from '@/services/types';
 
 const VIDEO_TOKEN = require('@/assets/video/generate-api-token.mp4');
@@ -35,7 +45,7 @@ const METHODS: { value: AuthMethod; label: string }[] = [
 
 export default function LoginScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
   const { add } = useLocalSearchParams<{ add?: string }>();
@@ -48,17 +58,33 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
-  // Token and Global Key sign-in stay available, folded away behind "Advanced".
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // On web, custom cfmobile:// OAuth callbacks cannot return to the browser tab, so expand token login by default.
+  const [showAdvanced, setShowAdvanced] = useState(Platform.OS === 'web');
+  const [segWidth, setSegWidth] = useState(0);
 
-  // Opens Cloudflare's consent page. The redirect lands on app/oauth/callback, which finishes the login.
+  const indicatorX = useSharedValue(0);
+  useEffect(() => {
+    const idx = method === 'token' ? 0 : 1;
+    const itemW = Math.max(0, (segWidth - 8) / 2);
+    indicatorX.value = withSpring(idx * itemW, M3_SPRING);
+  }, [method, segWidth, indicatorX]);
+
+  const segmentIndicatorStyle = useAnimatedStyle(() => ({
+    width: Math.max(0, (segWidth - 8) / 2),
+    transform: [{ translateX: indicatorX.value }],
+  }));
+
   const startOAuth = async () => {
+    setErrorMsg(null);
     setOauthLoading(true);
     try {
       const url = await beginOAuth(isAddMode);
       await WebBrowser.openAuthSessionAsync(url, OAUTH_APP_RETURN);
     } catch (e: any) {
-      Alert.alert(t('common.error'), e?.message ?? t('auth.oauth_failed'));
+      const msg = e?.message ?? t('auth.oauth_failed');
+      setErrorMsg(msg);
+      if (Platform.OS !== 'web') Alert.alert(t('common.error'), msg);
     } finally {
       setOauthLoading(false);
     }
@@ -80,17 +106,22 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
+    setErrorMsg(null);
     setLoading(true);
     try {
       if (method === 'token') {
         if (!apiToken.trim()) {
-          Alert.alert(t('common.error'), t('auth.token_required'));
+          const msg = t('auth.token_required');
+          setErrorMsg(msg);
+          if (Platform.OS !== 'web') Alert.alert(t('common.error'), msg);
           return;
         }
         await login({ method: 'token', apiToken: apiToken.replace(/\s+/g, '') });
       } else {
         if (!email.trim() || !globalKey.trim()) {
-          Alert.alert(t('common.error'), t('auth.fields_required'));
+          const msg = t('auth.fields_required');
+          setErrorMsg(msg);
+          if (Platform.OS !== 'web') Alert.alert(t('common.error'), msg);
           return;
         }
         await login({ method: 'global_key', globalKey: globalKey.replace(/\s+/g, ''), email: email.trim() });
@@ -99,7 +130,8 @@ export default function LoginScreen() {
       else router.replace('/(tabs)');
     } catch (e: any) {
       const msg = e?.response?.data?.errors?.[0]?.message ?? e?.message ?? t('auth.error');
-      Alert.alert(t('common.error'), msg);
+      setErrorMsg(msg);
+      if (Platform.OS !== 'web') Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
     }
@@ -115,7 +147,7 @@ export default function LoginScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -126,172 +158,211 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* Hero */}
-          <View style={[styles.hero, { paddingTop: insets.top + Spacing.xl }]}>
+          {/* Material You Hero Canvas */}
+          <View style={[styles.hero, { paddingTop: insets.top + Spacing.xl, backgroundColor: colors.primaryContainer }]}>
             <BrandGradient />
             {isAddMode && router.canGoBack() && (
-              <TouchableOpacity
+              <M3Pressable
                 onPress={() => router.back()}
-                style={[styles.back, { top: insets.top + Spacing.md }]}
+                radius={22}
+                stateLayerColor={colors.onPrimaryContainer}
+                style={[
+                  styles.back,
+                  { top: insets.top + Spacing.md, backgroundColor: colors.surfaceContainerLowest + 'C4' },
+                ]}
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel="Back"
               >
-                <Icon name="arrow-left" size={18} color="#FFFFFF" />
-              </TouchableOpacity>
+                <Icon name="arrow-left" size={18} color={colors.onSurface} />
+              </M3Pressable>
             )}
-            <View style={styles.mark}>
-              <BrandMark bare size={46} />
-            </View>
-            <Text style={styles.heroTitle}>CloudFlare Mobile</Text>
-            <Text style={styles.heroTagline}>{t('auth.tagline')}</Text>
 
-            <View style={styles.featureRow}>
-              {features.map((f) => (
-                <View key={f.icon} style={styles.feature}>
-                  <Icon name={f.icon} size={12} color="#FFFFFF" />
-                  <Text style={styles.featureText}>{f.text}</Text>
-                </View>
-              ))}
-            </View>
+            <M3Entrance index={0} distance={10} style={styles.heroCenter}>
+              <View style={[styles.mark, { backgroundColor: colors.primary }]}>
+                <BrandMark bare size={42} />
+              </View>
+              <Text style={[styles.heroTitle, { color: colors.onPrimaryContainer }]}>CloudFlare Mobile</Text>
+              <Text style={[styles.heroTagline, { color: colors.onPrimaryContainer }]}>{t('auth.tagline')}</Text>
+
+              <View style={styles.featureRow}>
+                {features.map((f) => (
+                  <View key={f.icon} style={styles.feature}>
+                    <Icon name={f.icon} size={13} color={colors.onPrimaryContainer} />
+                    <Text style={[styles.featureText, { color: colors.onPrimaryContainer }]}>{f.text}</Text>
+                  </View>
+                ))}
+              </View>
+            </M3Entrance>
           </View>
 
           <View style={styles.body}>
-            {/* Sign in card, pulled up over the hero */}
-            <View style={[styles.form, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-              <Text style={[styles.formTitle, { color: colors.text }]}>{t('auth.sign_in')}</Text>
-              <Text style={[styles.formSubtitle, { color: colors.textSecondary }]}>{t('auth.oauth_hint')}</Text>
+            <M3Entrance index={1} distance={14}>
+              {/* Tonal M3 Auth Surface */}
+              <View style={[styles.form, { backgroundColor: colors.surfaceContainerLow }]}>
+                <Text style={[styles.formTitle, { color: colors.onSurface }]}>{t('auth.sign_in')}</Text>
+                <Text style={[styles.formSubtitle, { color: colors.onSurfaceVariant }]}>{t('auth.oauth_hint')}</Text>
 
-              <Button
-                title={t('auth.oauth_button')}
-                onPress={startOAuth}
-                loading={oauthLoading}
-                size="lg"
-                icon={<BrandMark bare size={22} />}
-                style={styles.oauth}
-              />
-
-              <TouchableOpacity
-                onPress={() => setShowAdvanced((v) => !v)}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: showAdvanced }}
-                style={[styles.advanced, { borderTopColor: colors.border }]}
-              >
-                <View style={styles.advancedText}>
-                  <Text style={[styles.advancedTitle, { color: colors.text }]}>{t('auth.advanced')}</Text>
-                  <Text style={[styles.advancedHint, { color: colors.textSecondary }]}>{t('auth.advanced_hint')}</Text>
-                </View>
-                <Icon name={showAdvanced ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
-
-              {showAdvanced && (
-              <>
-              <View style={[styles.segment, { backgroundColor: colors.surfaceSecondary }]}>
-                {METHODS.map((m) => {
-                  const active = m.value === method;
-                  return (
-                    <TouchableOpacity
-                      key={m.value}
-                      onPress={() => setMethod(m.value)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      style={[styles.segmentItem, active && { backgroundColor: colors.primary }]}
-                    >
-                      <Text style={[styles.segmentText, { color: active ? '#FFFFFF' : colors.textSecondary }]}>
-                        {m.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {method === 'token' ? (
-                <View style={styles.hint}>
-                  <Icon name="check-circle" size={14} color={colors.success} />
-                  <Text style={[styles.hintText, { color: colors.textSecondary }]}>{t('auth.recommended')}</Text>
-                </View>
-              ) : (
-                <View style={styles.warning}>
-                  <Banner tone="warning" message={t('auth.full_access_warning')} />
-                </View>
-              )}
-
-              {method === 'token' ? (
-                <Field
-                  label={t('auth.api_token')}
-                  placeholder={t('auth.token_placeholder')}
-                  value={apiToken}
-                  onChangeText={setApiToken}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
+                <Button
+                  title={t('auth.oauth_button')}
+                  onPress={startOAuth}
+                  loading={oauthLoading}
+                  size="lg"
+                  icon={<BrandMark bare size={22} />}
+                  style={styles.oauth}
                 />
-              ) : (
-                <>
-                  <Field
-                    label={t('auth.email')}
-                    placeholder="user@example.com"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <Field
-                    label={t('auth.global_key')}
-                    placeholder={t('auth.global_key_placeholder')}
-                    value={globalKey}
-                    onChangeText={setGlobalKey}
-                    secureTextEntry
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </>
-              )}
 
-              <Button
-                title={loading ? t('auth.verifying') : t('auth.login')}
-                onPress={handleLogin}
-                loading={loading}
-                size="lg"
-                variant="secondary"
-                style={styles.submit}
-              />
-              </>
-              )}
-            </View>
+                <M3Pressable
+                  onPress={() => setShowAdvanced((v) => !v)}
+                  radius={Radius.md}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showAdvanced }}
+                  style={[styles.advanced, { borderTopColor: colors.outlineVariant + '55' }]}
+                >
+                  <View style={styles.advancedText}>
+                    <Text style={[styles.advancedTitle, { color: colors.onSurface }]}>{t('auth.advanced')}</Text>
+                    <Text style={[styles.advancedHint, { color: colors.onSurfaceVariant }]}>{t('auth.advanced_hint')}</Text>
+                  </View>
+                  <View style={[styles.expandBadge, { backgroundColor: colors.surfaceContainerHigh }]}>
+                    <Icon name={showAdvanced ? 'chevron-up' : 'chevron-down'} size={18} color={colors.onSurfaceVariant} />
+                  </View>
+                </M3Pressable>
 
-            {/* Help with finding a token: only relevant to the advanced path */}
+                {showAdvanced && (
+                  <M3Entrance index={0} distance={8}>
+                    {/* Animated Material 3 Segmented Button */}
+                    <View
+                      style={[
+                        styles.segment,
+                        { backgroundColor: colors.surfaceContainerHigh, borderColor: colors.outlineVariant },
+                      ]}
+                      onLayout={(e) => setSegWidth(e.nativeEvent.layout.width)}
+                    >
+                      {segWidth > 0 && (
+                        <Animated.View
+                          pointerEvents="none"
+                          style={[
+                            styles.segmentIndicator,
+                            { backgroundColor: colors.secondaryContainer },
+                            segmentIndicatorStyle,
+                          ]}
+                        />
+                      )}
+                      {METHODS.map((m) => {
+                        const active = m.value === method;
+                        return (
+                          <TouchableOpacity
+                            key={m.value}
+                            onPress={() => setMethod(m.value)}
+                            activeOpacity={0.85}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: active }}
+                            style={styles.segmentItem}
+                          >
+                            {active && <Icon name="check" size={15} color={colors.onSecondaryContainer} />}
+                            <Text
+                              style={[
+                                styles.segmentText,
+                                { color: active ? colors.onSecondaryContainer : colors.onSurfaceVariant },
+                              ]}
+                            >
+                              {m.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                    {method === 'token' ? (
+                      <View style={styles.hint}>
+                        <Icon name="check-circle" size={15} color={colors.success} />
+                        <Text style={[styles.hintText, { color: colors.onSurfaceVariant }]}>{t('auth.recommended')}</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.warning}>
+                        <Banner tone="warning" message={t('auth.full_access_warning')} />
+                      </View>
+                    )}
+
+                    {method === 'token' ? (
+                      <Field
+                        label={t('auth.api_token')}
+                        placeholder={t('auth.token_placeholder')}
+                        value={apiToken}
+                        onChangeText={setApiToken}
+                        secureTextEntry
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    ) : (
+                      <>
+                        <Field
+                          label={t('auth.email')}
+                          placeholder="user@example.com"
+                          value={email}
+                          onChangeText={setEmail}
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                        <Field
+                          label={t('auth.global_key')}
+                          placeholder={t('auth.global_key_placeholder')}
+                          value={globalKey}
+                          onChangeText={setGlobalKey}
+                          secureTextEntry
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                      </>
+                    )}
+
+                    {errorMsg && (
+                      <View style={styles.warning}>
+                        <Banner tone="error" message={errorMsg} />
+                      </View>
+                    )}
+
+                    <Button
+                      title={loading ? t('auth.verifying') : t('auth.login')}
+                      onPress={handleLogin}
+                      loading={loading}
+                      size="lg"
+                      variant="tonal"
+                      style={styles.submit}
+                    />
+                  </M3Entrance>
+                )}
+              </View>
+            </M3Entrance>
+
             {showAdvanced && (
-            <>
-            <SectionHeader title={t('auth.need_help')} />
-            <Group>
-              <ListRow
-                icon="pageview"
-                title={t('auth.watch_tutorial')}
-                subtitle={t('auth.tutorial_hint')}
-                onPress={openVideo}
-              />
-              <ListRow
-                icon="link"
-                title={t('auth.open_dashboard')}
-                subtitle={t('auth.dashboard_hint')}
-                onPress={() => Linking.openURL(dashboardUrl)}
-              />
-            </Group>
-            </>
+              <M3Entrance index={2} distance={10}>
+                <SectionHeader title={t('auth.need_help')} />
+                <Group>
+                  <ListRow
+                    icon="pageview"
+                    title={t('auth.watch_tutorial')}
+                    subtitle={t('auth.tutorial_hint')}
+                    onPress={openVideo}
+                  />
+                  <ListRow
+                    icon="link"
+                    title={t('auth.open_dashboard')}
+                    subtitle={t('auth.dashboard_hint')}
+                    onPress={() => Linking.openURL(dashboardUrl)}
+                  />
+                </Group>
+              </M3Entrance>
             )}
 
-            {/* Privacy / open source notice */}
             <TouchableOpacity
               activeOpacity={0.7}
               style={styles.privacy}
               onPress={() => Linking.openURL('https://github.com/imtaqin/CFMobile')}
             >
               <Icon name="shield" size={14} color={colors.textTertiary} />
-              <Text style={[styles.privacyText, { color: colors.textSecondary }]}>{t('auth.privacy_notice')}</Text>
+              <Text style={[styles.privacyText, { color: colors.onSurfaceVariant }]}>{t('auth.privacy_notice')}</Text>
             </TouchableOpacity>
 
             <Text style={[styles.footerText, { color: colors.textTertiary }]}>
@@ -301,7 +372,6 @@ export default function LoginScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Video tutorial: a full-screen player, always on black */}
       <Modal
         visible={showVideo}
         animationType="slide"
@@ -336,76 +406,73 @@ export default function LoginScreen() {
   );
 }
 
-// How far the sign-in card overlaps the hero.
-const OVERLAP = 40;
+const OVERLAP = 44;
 
 const styles = StyleSheet.create({
-  // Hero
   hero: {
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
     paddingBottom: OVERLAP + Spacing.xxl,
-    backgroundColor: '#F6821F',
     overflow: 'hidden',
+  },
+  heroCenter: {
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 560,
   },
   back: {
     position: 'absolute',
     left: Spacing.lg,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    zIndex: 1,
+    zIndex: 2,
   },
   mark: {
-    width: 76,
-    height: 76,
+    width: 72,
+    height: 72,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
-  heroTitle: { color: '#FFFFFF', fontSize: 26, fontWeight: '600', letterSpacing: -0.6 },
+  heroTitle: { fontSize: 28, fontWeight: '700', letterSpacing: -0.6 },
   heroTagline: {
-    color: 'rgba(255,255,255,0.92)',
     fontSize: FontSize.md,
     marginTop: Spacing.xs,
     textAlign: 'center',
+    opacity: 0.9,
   },
   featureRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.lg,
     marginTop: Spacing.lg,
   },
   feature: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    height: 28,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(255,255,255,0.18)',
   },
-  featureText: { color: '#FFFFFF', fontSize: FontSize.xs, fontWeight: '500' },
+  featureText: { fontSize: FontSize.xs, fontWeight: '600', opacity: 0.9 },
 
-  // Form
-  body: { paddingHorizontal: Spacing.lg },
+  body: {
+    paddingHorizontal: Spacing.lg,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+  },
   form: {
     marginTop: -OVERLAP,
     borderRadius: Radius.xl,
-    borderWidth: 1,
     padding: Spacing.xl,
     marginBottom: Spacing.sm,
   },
-  formTitle: { fontSize: FontSize.xl, fontWeight: '600', letterSpacing: -0.3 },
-  formSubtitle: { fontSize: FontSize.sm, marginTop: 2 },
+  formTitle: { fontSize: FontSize.xxl, fontWeight: '700', letterSpacing: -0.4 },
+  formSubtitle: { fontSize: FontSize.sm, marginTop: 4, lineHeight: 19 },
   oauth: { marginTop: Spacing.lg },
   advanced: {
     flexDirection: 'row',
@@ -416,17 +483,37 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   advancedText: { flex: 1 },
-  advancedTitle: { fontSize: FontSize.md, fontWeight: '500' },
+  advancedTitle: { fontSize: FontSize.md, fontWeight: '600' },
   advancedHint: { fontSize: FontSize.sm, marginTop: 2 },
+  expandBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   segment: {
+    position: 'relative',
     flexDirection: 'row',
     borderRadius: Radius.full,
+    borderWidth: 1,
     padding: 4,
     marginTop: Spacing.lg,
+    height: 46,
+    alignItems: 'center',
+  },
+  segmentIndicator: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    bottom: 4,
+    borderRadius: Radius.full,
   },
   segmentItem: {
     flex: 1,
-    height: 38,
+    height: '100%',
+    flexDirection: 'row',
+    gap: 6,
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -437,7 +524,6 @@ const styles = StyleSheet.create({
   warning: { marginTop: Spacing.md },
   submit: { marginTop: Spacing.xl },
 
-  // Notices
   privacy: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -445,7 +531,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
     paddingHorizontal: Spacing.xs,
   },
-  privacyText: { flex: 1, fontSize: FontSize.xs, lineHeight: 16 },
+  privacyText: { flex: 1, fontSize: FontSize.xs, lineHeight: 17 },
   footerText: {
     textAlign: 'center',
     fontSize: FontSize.xs,
@@ -454,7 +540,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
   },
 
-  // Video modal
   videoRoot: { flex: 1, backgroundColor: '#000' },
   videoHeader: {
     flexDirection: 'row',

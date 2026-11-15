@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  StyleSheet, View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity, ActivityIndicator,
+  StyleSheet, View, Text, ScrollView, RefreshControl, Alert, ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { Loading } from '@/components/ui/loading';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Group, IconCircle, ListRow, StatCard, ToggleRow } from '@/components/ui/kit';
+import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
 import { HeaderButton } from '@/components/ui/header-button';
 import * as zoneTiles from '@/services/zone-tiles';
 import { useAuth } from '@/contexts/auth';
@@ -148,7 +149,6 @@ export default function ZoneDetailScreen() {
   const tile = (show: boolean, icon: IconName, title: string, path: string): Tile | null =>
     show ? { icon, title, path } : null;
 
-  // Grouped by what you are trying to do, most used first.
   const groups: { title: string; tiles: Tile[] }[] = [
     {
       title: t('zone.group_core'),
@@ -216,7 +216,6 @@ export default function ZoneDetailScreen() {
   const open = (path: string) =>
     path === '__ai-chat'
       ? router.push({ pathname: '/ai-chat', params: { zoneId: id, zoneName: zone.name } } as any)
-      // The snapshot file is named after the zone, so the name travels with it.
       : path === 'dns-backup'
         ? router.push({ pathname: `/zone/${id}/dns-backup`, params: { name: zone.name } } as any)
         : router.push(`/zone/${id}/${path}` as any);
@@ -241,119 +240,125 @@ export default function ZoneDetailScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchZone(); }} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Zone summary */}
-        <View style={[styles.hero, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
-          <IconCircle name="globe" size={44} />
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={[styles.zoneName, { color: colors.text }]} numberOfLines={1}>{zone.name}</Text>
-            <Text style={[styles.zoneMeta, { color: colors.textTertiary }]} numberOfLines={1}>
-              {zone.plan.name} · {maskName(zone.account.name)}
-            </Text>
-          </View>
-          <Badge label={zone.status} variant={statusVariant} />
-        </View>
-
-        <View style={styles.statsRow}>
-          <StatCard label={t('zone.nameservers')} value={String(zone.name_servers?.length ?? 0)} />
-          <StatCard label="Type" value={zone.type} />
-          <StatCard label="Since" value={String(new Date(zone.created_on).getFullYear())} />
-        </View>
-
-        {/* Quick controls */}
-        <SectionHeader title={t('zone.group_controls')} />
-        <Group>
-          <ToggleRow
-            icon="shield"
-            iconTone={underAttack ? 'error' : 'neutral'}
-            title={t('zone.under_attack')}
-            subtitle={underAttack ? t('zone.under_attack_active') : t('zone.under_attack_desc')}
-            value={underAttack}
-            onValueChange={toggleUnderAttack}
-          />
-          <ToggleRow
-            icon="developer-mode"
-            iconTone={devMode ? 'warning' : 'neutral'}
-            title={t('zone.dev_mode')}
-            subtitle={t('zone.dev_mode_desc')}
-            value={devMode}
-            onValueChange={toggleDevMode}
-          />
-          <ToggleRow
-            icon="power"
-            iconTone={paused ? 'warning' : 'neutral'}
-            title={t('zone.pause_zone')}
-            subtitle={paused ? t('zone.pause_zone_active') : t('zone.pause_zone_desc')}
-            value={paused}
-            onValueChange={togglePause}
-          />
-          <ToggleRow
-            icon="lock"
-            title={t('zone.hold')}
-            subtitle={holdActive ? t('zone.hold_active') : t('zone.hold_desc')}
-            value={holdActive}
-            onValueChange={toggleHold}
-          />
-          <ListRow
-            icon="refresh"
-            title={t('zone.activation_check')}
-            subtitle={t('zone.activation_check_desc')}
-            onPress={checkingActivation ? undefined : handleActivationCheck}
-            trailing={checkingActivation ? <ActivityIndicator size="small" color={colors.textSecondary} /> : undefined}
-          />
-        </Group>
-
-        {/* Management */}
-        {groups.map((g) => (
-          <View key={g.title}>
-            <SectionHeader title={g.title} />
-            <View style={styles.tileGrid}>
-              {g.tiles.map((item) => {
-                const off = editing && hiddenTiles.has(item.path);
-                return (
-                  <TouchableOpacity
-                    key={item.path}
-                    style={[
-                      styles.tile,
-                      { backgroundColor: colors.surface, borderColor: colors.borderLight },
-                      off && styles.tileOff,
-                    ]}
-                    onPress={() => (editing ? zoneTiles.toggle(item.path) : open(item.path))}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityState={editing ? { selected: !off } : undefined}
-                  >
-                    <IconCircle name={editing ? (off ? 'plus' : 'close') : item.icon} size={34} />
-                    <Text style={[styles.tileTitle, { color: off ? colors.textTertiary : colors.text }]} numberOfLines={2}>
-                      {item.title}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+        <View style={styles.inner}>
+          <M3Entrance index={0}>
+            <View style={[styles.hero, { backgroundColor: colors.primaryContainer }]}>
+              <View style={[styles.heroIcon, { backgroundColor: colors.primary }]}>
+                <Icon name="globe" size={22} color={colors.onPrimary} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.zoneName, { color: colors.onPrimaryContainer }]} numberOfLines={1}>{zone.name}</Text>
+                <Text style={[styles.zoneMeta, { color: colors.onPrimaryContainer }]} numberOfLines={1}>
+                  {zone.plan.name} · {maskName(zone.account.name)}
+                </Text>
+              </View>
+              <Badge label={zone.status} variant={statusVariant} />
             </View>
-          </View>
-        ))}
+          </M3Entrance>
 
-        {editing && (
-          <Group style={{ marginTop: Spacing.md }}>
-            <ListRow
-              icon="refresh"
-              title={t('zone.show_all_tiles')}
-              subtitle={t('zone.hidden_count', { count: hiddenTiles.size })}
-              onPress={() => zoneTiles.showAll()}
-            />
-          </Group>
-        )}
-
-        {/* Nameservers */}
-        <SectionHeader title={t('zone.nameservers')} />
-        <Group>
-          {(zone.name_servers ?? []).map((ns) => (
-            <View key={ns} style={styles.nsRow}>
-              <Icon name="dns" size={14} color={colors.textTertiary} />
-              <Text style={[styles.nsText, { color: colors.text }]} selectable>{ns}</Text>
+          <M3Entrance index={1}>
+            <View style={styles.statsRow}>
+              <StatCard label={t('zone.nameservers')} value={String(zone.name_servers?.length ?? 0)} />
+              <StatCard label="Type" value={zone.type} />
+              <StatCard label="Since" value={String(new Date(zone.created_on).getFullYear())} />
             </View>
+          </M3Entrance>
+
+          <M3Entrance index={2}>
+            <SectionHeader title={t('zone.group_controls')} />
+            <Group>
+              <ToggleRow
+                icon="shield"
+                iconTone={underAttack ? 'error' : 'neutral'}
+                title={t('zone.under_attack')}
+                subtitle={underAttack ? t('zone.under_attack_active') : t('zone.under_attack_desc')}
+                value={underAttack}
+                onValueChange={toggleUnderAttack}
+              />
+              <ToggleRow
+                icon="developer-mode"
+                iconTone={devMode ? 'warning' : 'neutral'}
+                title={t('zone.dev_mode')}
+                subtitle={t('zone.dev_mode_desc')}
+                value={devMode}
+                onValueChange={toggleDevMode}
+              />
+              <ToggleRow
+                icon="power"
+                iconTone={paused ? 'warning' : 'neutral'}
+                title={t('zone.pause_zone')}
+                subtitle={paused ? t('zone.pause_zone_active') : t('zone.pause_zone_desc')}
+                value={paused}
+                onValueChange={togglePause}
+              />
+              <ToggleRow
+                icon="lock"
+                title={t('zone.hold')}
+                subtitle={holdActive ? t('zone.hold_active') : t('zone.hold_desc')}
+                value={holdActive}
+                onValueChange={toggleHold}
+              />
+              <ListRow
+                icon="refresh"
+                title={t('zone.activation_check')}
+                subtitle={t('zone.activation_check_desc')}
+                onPress={checkingActivation ? undefined : handleActivationCheck}
+                trailing={checkingActivation ? <ActivityIndicator size="small" color={colors.onSurfaceVariant} /> : undefined}
+              />
+            </Group>
+          </M3Entrance>
+
+          {groups.map((g, gIdx) => (
+            <M3Entrance key={g.title} index={3 + gIdx}>
+              <SectionHeader title={g.title} />
+              <View style={styles.tileGrid}>
+                {g.tiles.map((item) => {
+                  const off = editing && hiddenTiles.has(item.path);
+                  return (
+                    <M3Pressable
+                      key={item.path}
+                      radius={Radius.lg}
+                      style={[
+                        styles.tile,
+                        { backgroundColor: colors.surfaceContainerLow },
+                        off && styles.tileOff,
+                      ]}
+                      onPress={() => (editing ? zoneTiles.toggle(item.path) : open(item.path))}
+                      accessibilityRole="button"
+                      accessibilityState={editing ? { selected: !off } : undefined}
+                    >
+                      <IconCircle name={editing ? (off ? 'plus' : 'close') : item.icon} size={36} tone={off ? 'neutral' : 'primary'} />
+                      <Text style={[styles.tileTitle, { color: off ? colors.textTertiary : colors.onSurface }]} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                    </M3Pressable>
+                  );
+                })}
+              </View>
+            </M3Entrance>
           ))}
-        </Group>
+
+          {editing && (
+            <Group style={{ marginTop: Spacing.md }}>
+              <ListRow
+                icon="refresh"
+                title={t('zone.show_all_tiles')}
+                subtitle={t('zone.hidden_count', { count: hiddenTiles.size })}
+                onPress={() => zoneTiles.showAll()}
+              />
+            </Group>
+          )}
+
+          <SectionHeader title={t('zone.nameservers')} />
+          <Group>
+            {(zone.name_servers ?? []).map((ns) => (
+              <View key={ns} style={styles.nsRow}>
+                <Icon name="dns" size={14} color={colors.onSurfaceVariant} />
+                <Text style={[styles.nsText, { color: colors.onSurface }]} selectable>{ns}</Text>
+              </View>
+            ))}
+          </Group>
+        </View>
       </ScrollView>
     </>
   );
@@ -362,6 +367,7 @@ export default function ZoneDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl },
+  inner: { width: '100%', maxWidth: 960, alignSelf: 'center' },
 
   tileOff: { opacity: 0.4 },
 
@@ -370,11 +376,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     padding: Spacing.lg,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
+    borderRadius: Radius.xl,
   },
-  zoneName: { fontSize: FontSize.lg, fontWeight: '500', letterSpacing: -0.2 },
-  zoneMeta: { fontSize: FontSize.xs },
+  heroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoneName: { fontSize: FontSize.xl, fontWeight: '700', letterSpacing: -0.3 },
+  zoneMeta: { fontSize: FontSize.xs, opacity: 0.85 },
   statsRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
 
   tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
@@ -384,13 +396,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    minHeight: 58,
+    minHeight: 62,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: Radius.lg,
-    borderWidth: 1,
   },
-  tileTitle: { flex: 1, fontSize: FontSize.sm, fontWeight: '500', lineHeight: 17 },
+  tileTitle: { flex: 1, fontSize: FontSize.sm, fontWeight: '600', lineHeight: 17 },
 
   nsRow: {
     flexDirection: 'row',

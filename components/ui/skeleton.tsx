@@ -1,19 +1,17 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { useEffect } from 'react';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTheme } from '@/hooks/use-theme';
 import { Radius, Spacing } from '@/constants/theme';
 
-/**
- * Placeholder shapes for a screen that is still loading.
- *
- * A spinner on an empty canvas says "wait"; a skeleton says "this is what is
- * coming", and the screen does not jump when the data lands. Built on the
- * React Native `Animated` API rather than Reanimated: one looping opacity on
- * a handful of blocks needs nothing more, and it keeps these parts free of
- * worklets.
- */
-
-/** One pulsing block. Everything else here is made of these. */
+/** Material You tonal pulsing placeholder block. */
 export function Skeleton({ width, height = 14, radius = Radius.sm, style }: {
   width?: number | `${number}%`;
   height?: number;
@@ -21,23 +19,25 @@ export function Skeleton({ width, height = 14, radius = Radius.sm, style }: {
   style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useTheme();
-  const pulse = useRef(new Animated.Value(0)).current;
+  const pulse = useSharedValue(0.45);
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 650, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 650, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ]),
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 750, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.45, { duration: 750, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      false,
     );
-    loop.start();
-    return () => loop.stop();
   }, [pulse]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: pulse.value,
+  }));
 
   return (
     <Animated.View
-      // Decorative: a screen reader should announce the loading state once,
-      // from the screen, not once per block.
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={[
@@ -45,28 +45,29 @@ export function Skeleton({ width, height = 14, radius = Radius.sm, style }: {
           width,
           height,
           borderRadius: radius,
-          backgroundColor: colors.surfaceSecondary,
-          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }),
+          backgroundColor: colors.surfaceContainerHigh,
         },
+        animStyle,
         style,
       ]}
     />
   );
 }
 
-/** The card the real rows will sit in, with a circle and two lines each. */
 export function SkeletonRows({ count = 4, avatar = true }: { count?: number; avatar?: boolean }) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+    <View style={[styles.card, { backgroundColor: colors.surfaceContainerLow }]}>
       {Array.from({ length: count }).map((_, i) => (
         <View
           key={i}
-          style={[styles.row, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight }]}
+          style={[
+            styles.row,
+            i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outlineVariant + '55' },
+          ]}
         >
-          {avatar && <Skeleton width={36} height={36} radius={18} />}
+          {avatar && <Skeleton width={40} height={40} radius={14} />}
           <View style={styles.rowBody}>
-            {/* Staggered widths read as text, not as a table. */}
             <Skeleton width={i % 3 === 0 ? '62%' : i % 3 === 1 ? '48%' : '55%'} height={13} />
             <Skeleton width={i % 2 === 0 ? '38%' : '44%'} height={11} />
           </View>
@@ -76,7 +77,6 @@ export function SkeletonRows({ count = 4, avatar = true }: { count?: number; ava
   );
 }
 
-/** A row of number cards, the shape of `StatCard`. */
 export function SkeletonStats({ count = 3 }: { count?: number }) {
   const { colors } = useTheme();
   return (
@@ -84,17 +84,16 @@ export function SkeletonStats({ count = 3 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <View
           key={i}
-          style={[styles.stat, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+          style={[styles.stat, { backgroundColor: colors.surfaceContainer }]}
         >
-          <Skeleton width={34} height={22} />
-          <Skeleton width="70%" height={10} />
+          <Skeleton width={38} height={24} />
+          <Skeleton width="72%" height={10} />
         </View>
       ))}
     </View>
   );
 }
 
-/** The two-column tile grid used by the dashboard and the zone screen. */
 export function SkeletonTiles({ count = 6 }: { count?: number }) {
   const { colors } = useTheme();
   return (
@@ -102,9 +101,9 @@ export function SkeletonTiles({ count = 6 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <View
           key={i}
-          style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+          style={[styles.tile, { backgroundColor: colors.surfaceContainerLow }]}
         >
-          <Skeleton width={34} height={34} radius={17} />
+          <Skeleton width={40} height={40} radius={14} />
           <Skeleton width="58%" height={12} />
         </View>
       ))}
@@ -112,14 +111,13 @@ export function SkeletonTiles({ count = 6 }: { count?: number }) {
   );
 }
 
-/** Stands in for a `SectionHeader` so sections do not shift when they arrive. */
 export function SkeletonHeading({ width = 110 }: { width?: number }) {
-  return <Skeleton width={width} height={15} style={{ marginTop: Spacing.lg, marginBottom: Spacing.sm, marginLeft: Spacing.xs }} />;
+  return <Skeleton width={width} height={14} style={{ marginTop: Spacing.lg, marginBottom: Spacing.sm, marginLeft: Spacing.xs }} />;
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: Radius.lg, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, minHeight: 60 },
+  card: { borderRadius: Radius.lg, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, minHeight: 62 },
   rowBody: { flex: 1, gap: 7 },
 
   statsRow: { flexDirection: 'row', gap: Spacing.sm },
@@ -127,9 +125,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
     padding: Spacing.md,
-    borderWidth: 1,
     borderRadius: Radius.lg,
-    minHeight: 72,
+    minHeight: 76,
     justifyContent: 'center',
   },
 
@@ -140,9 +137,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    minHeight: 96,
+    minHeight: 100,
     paddingVertical: Spacing.md,
-    borderWidth: 1,
     borderRadius: Radius.lg,
   },
 });

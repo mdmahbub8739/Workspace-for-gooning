@@ -1,6 +1,7 @@
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { M3Pressable } from '@/components/ui/m3-motion';
 
 interface HeaderButtonProps {
   icon: IconName;
@@ -8,31 +9,32 @@ interface HeaderButtonProps {
   onPress: () => void;
 }
 
-/** Round white icon button for the right side of a screen header. */
+/** Material Design 3 tonal filled IconButton for screen headers. */
 export function HeaderButton({ icon, label, onPress }: HeaderButtonProps) {
   const { colors } = useTheme();
 
   return (
-    <TouchableOpacity
+    <M3Pressable
       onPress={onPress}
-      activeOpacity={0.7}
+      scaleTo={0.92}
+      radius={20}
       hitSlop={6}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[styles.button, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+      style={[styles.button, { backgroundColor: colors.surfaceContainerHigh }]}
     >
-      <Icon name={icon} size={18} color={colors.text} />
-    </TouchableOpacity>
+      <Icon name={icon} size={19} color={colors.onSurface} />
+    </M3Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
 });

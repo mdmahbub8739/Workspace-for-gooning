@@ -1,24 +1,45 @@
-import { StyleSheet, View, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { M3Pressable } from '@/components/ui/m3-motion';
 
 interface CardProps {
   onPress?: () => void;
-  variant?: 'default' | 'outlined';
+  variant?: 'default' | 'elevated' | 'filled' | 'outlined';
   compact?: boolean;
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
 }
 
-/** Flat white surface with a hairline border — no drop shadow. */
+/**
+ * Material Design 3 Card:
+ * Tonal surface containers (`surfaceContainerLow` / `surfaceContainerLowest`)
+ * with rounded 24dp geometry and animated press state layer when clickable.
+ */
 export function Card({ style, children, onPress, variant = 'default', compact }: CardProps) {
   const { colors } = useTheme();
+
+  const isElevated = variant === 'elevated';
+  const isOutlined = variant === 'outlined';
+  const isFilled = variant === 'filled';
 
   const cardStyle: StyleProp<ViewStyle> = [
     styles.card,
     {
-      backgroundColor: colors.surface,
-      borderColor: variant === 'outlined' ? colors.border : colors.borderLight,
+      backgroundColor: isElevated
+        ? colors.surfaceContainerLowest
+        : isFilled
+          ? colors.surfaceContainer
+          : colors.surfaceContainerLow,
+      borderWidth: isOutlined ? 1 : 0,
+      borderColor: isOutlined ? colors.outlineVariant : 'transparent',
+    },
+    isElevated && {
+      shadowColor: colors.cardShadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 12,
+      elevation: 2,
     },
     compact && styles.compact,
     style,
@@ -26,9 +47,9 @@ export function Card({ style, children, onPress, variant = 'default', compact }:
 
   if (onPress) {
     return (
-      <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={cardStyle}>
+      <M3Pressable onPress={onPress} scaleTo={0.98} radius={Radius.lg} style={cardStyle}>
         {children}
-      </TouchableOpacity>
+      </M3Pressable>
     );
   }
 
@@ -38,8 +59,8 @@ export function Card({ style, children, onPress, variant = 'default', compact }:
 const styles = StyleSheet.create({
   card: {
     borderRadius: Radius.lg,
-    borderWidth: 1,
     padding: Spacing.lg,
+    overflow: 'hidden',
   },
   compact: {
     padding: Spacing.md,

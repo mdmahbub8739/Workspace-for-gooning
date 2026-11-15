@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconName } from '@/components/ui/icon';
@@ -7,23 +7,19 @@ import { useTheme } from '@/hooks/use-theme';
 import { usePremium } from '@/services/premium';
 import { openReview } from '@/services/review-prompt';
 import * as monitoring from '@/services/monitoring';
-import { Spacing, FontSize, Radius, CF } from '@/constants/theme';
+import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
+import { Spacing, FontSize, Radius } from '@/constants/theme';
 
 interface DiscoverCard {
   key: string;
   icon: IconName;
-  color: string;
+  tone: 'primary' | 'secondary' | 'tertiary' | 'info' | 'success';
   title: string;
   body: string;
   cta: string;
   onPress: () => void;
 }
 
-/**
- * Feature discovery strip on the dashboard. Always visible so people keep
- * finding the parts of the app they haven't tried yet — the cards themselves
- * change based on what the user already has.
- */
 export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -36,11 +32,10 @@ export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
 
   const cards: DiscoverCard[] = [];
 
-  // AI audit — the most impressive thing to try first
   cards.push({
     key: 'ai',
     icon: 'shield-check',
-    color: CF.orange,
+    tone: 'primary',
     title: t('discover.ai_title'),
     body: t('discover.ai_body'),
     cta: t('discover.ai_cta'),
@@ -54,7 +49,7 @@ export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
     cards.push({
       key: 'monitor',
       icon: 'activity',
-      color: '#10B981',
+      tone: 'success',
       title: t('discover.monitor_title'),
       body: t('discover.monitor_body'),
       cta: t('discover.monitor_cta'),
@@ -66,7 +61,7 @@ export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
     cards.push({
       key: 'premium',
       icon: 'zap',
-      color: '#8B5CF6',
+      tone: 'tertiary',
       title: t('discover.premium_title'),
       body: t('discover.premium_body'),
       cta: t('discover.premium_cta'),
@@ -77,7 +72,7 @@ export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
   cards.push({
     key: 'review',
     icon: 'check-circle',
-    color: '#F59E0B',
+    tone: 'secondary',
     title: t('discover.review_title'),
     body: t('discover.review_body'),
     cta: t('discover.review_cta'),
@@ -87,40 +82,60 @@ export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
   cards.push({
     key: 'oss',
     icon: 'code',
-    color: colors.info,
+    tone: 'info',
     title: t('discover.oss_title'),
     body: t('discover.oss_body'),
     cta: t('discover.oss_cta'),
     onPress: () => router.push('/about'),
   });
 
+  const tonePalette = (tone: DiscoverCard['tone']) => {
+    switch (tone) {
+      case 'primary':
+        return { bg: colors.primaryContainer, fg: colors.onPrimaryContainer };
+      case 'tertiary':
+        return { bg: colors.tertiaryContainer, fg: colors.onTertiaryContainer };
+      case 'success':
+        return { bg: colors.successContainer, fg: colors.onSuccessContainer };
+      case 'info':
+        return { bg: colors.infoContainer, fg: colors.onInfoContainer };
+      default:
+        return { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer };
+    }
+  };
+
   return (
     <>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('discover.title')}</Text>
+      <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('discover.title')}</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.strip}
         style={styles.scroll}
       >
-        {cards.map((card) => (
-          <TouchableOpacity
-            key={card.key}
-            style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
-            onPress={card.onPress}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.iconWrap, { backgroundColor: colors.surfaceSecondary }]}>
-              <Icon name={card.icon} size={18} color={colors.text} />
-            </View>
-            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{card.title}</Text>
-            <Text style={[styles.body, { color: colors.textSecondary }]} numberOfLines={3}>{card.body}</Text>
-            <View style={styles.ctaRow}>
-              <Text style={[styles.cta, { color: colors.primary }]}>{card.cta}</Text>
-              <Icon name="chevron-right" size={14} color={colors.primary} />
-            </View>
-          </TouchableOpacity>
-        ))}
+        {cards.map((card, index) => {
+          const badge = tonePalette(card.tone);
+          return (
+            <M3Entrance key={card.key} index={index}>
+              <M3Pressable
+                onPress={card.onPress}
+                scaleTo={0.97}
+                radius={Radius.lg}
+                style={[styles.card, { backgroundColor: colors.surfaceContainerLow }]}
+              >
+                <View style={[styles.iconWrap, { backgroundColor: badge.bg }]}>
+                  <Icon name={card.icon} size={20} color={badge.fg} />
+                </View>
+                <Text style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>{card.title}</Text>
+                <Text style={[styles.body, { color: colors.onSurfaceVariant }]} numberOfLines={3}>{card.body}</Text>
+                <View style={styles.ctaRow}>
+                  <Text style={[styles.cta, { color: colors.primary }]}>{card.cta}</Text>
+                  <Icon name="chevron-right" size={15} color={colors.primary} />
+                </View>
+              </M3Pressable>
+            </M3Entrance>
+          );
+        })}
       </ScrollView>
     </>
   );
@@ -128,30 +143,31 @@ export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: FontSize.md,
-    fontWeight: '500',
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    letterSpacing: 0.35,
     paddingHorizontal: Spacing.lg + Spacing.xs,
     marginBottom: Spacing.sm,
   },
   scroll: { marginBottom: Spacing.xl },
-  strip: { paddingHorizontal: Spacing.lg, gap: Spacing.sm },
+  strip: { paddingHorizontal: Spacing.lg, gap: Spacing.md },
   card: {
-    width: 230,
+    width: 244,
     padding: Spacing.lg,
     borderRadius: Radius.lg,
-    borderWidth: 1,
-    gap: 6,
+    gap: 8,
+    overflow: 'hidden',
   },
   iconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 42,
+    height: 42,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
-  title: { fontSize: FontSize.md, fontWeight: '500' },
-  body: { fontSize: FontSize.xs, lineHeight: 16, minHeight: 48 },
+  title: { fontSize: FontSize.md, fontWeight: '600' },
+  body: { fontSize: FontSize.xs, lineHeight: 17, minHeight: 51 },
   ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
-  cta: { fontSize: FontSize.xs, fontWeight: '600' },
+  cta: { fontSize: FontSize.sm, fontWeight: '600' },
 });

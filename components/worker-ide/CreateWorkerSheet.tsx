@@ -141,10 +141,10 @@ export function CreateWorkerSheet({
       <View
         style={[
           styles.tplPreview,
-          { backgroundColor: colors.surfaceSecondary, borderColor: colors.borderLight },
+          { backgroundColor: colors.surfaceContainer, borderColor: 'transparent' },
         ]}
       >
-        <Text style={[styles.tplDesc, { color: colors.textSecondary }]}>
+        <Text style={[styles.tplDesc, { color: colors.onSurfaceVariant }]}>
           {t(selectedTemplate.descKey)}
         </Text>
         <View style={styles.fileChips}>
@@ -153,10 +153,10 @@ export function CreateWorkerSheet({
               key={f.path}
               style={[
                 styles.fileChip,
-                { backgroundColor: colors.surface, borderColor: colors.borderLight },
+                { backgroundColor: colors.secondaryContainer, borderColor: 'transparent' },
               ]}
             >
-              <Text style={[styles.fileChipText, { color: colors.text }]} numberOfLines={1}>
+              <Text style={[styles.fileChipText, { color: colors.onSecondaryContainer }]} numberOfLines={1}>
                 {f.path}
               </Text>
             </View>

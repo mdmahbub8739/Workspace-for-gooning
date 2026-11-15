@@ -5,7 +5,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   useWindowDimensions,
@@ -23,6 +22,7 @@ import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { Sheet } from '@/components/ui/sheet';
 import { Banner, Field, Group, ListRow, ToggleRow } from '@/components/ui/kit';
+import { M3Switch } from '@/components/ui/m3-motion';
 import { SyntaxEditor } from '@/components/worker-ide/SyntaxEditor';
 import { FileTreeDrawer } from '@/components/worker-ide/FileTreeDrawer';
 import { useTheme } from '@/hooks/use-theme';
@@ -566,7 +566,7 @@ export default function WorkerIdeScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {/* Top IDE Header Bar */}
-        <View style={[styles.topBar, { backgroundColor: colors.surface, borderBottomColor: colors.borderLight }]}>
+        <View style={[styles.topBar, { backgroundColor: colors.surfaceContainerLow, borderBottomColor: colors.outlineVariant + '55' }]}>
           <TouchableOpacity
             onPress={handleBack}
             hitSlop={8}
@@ -574,7 +574,7 @@ export default function WorkerIdeScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('common.back')}
           >
-            <Icon name="arrow-left" size={20} color={colors.text} />
+            <Icon name="arrow-left" size={20} color={colors.onSurface} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -582,12 +582,12 @@ export default function WorkerIdeScreen() {
             hitSlop={8}
             style={[
               styles.iconAction,
-              drawerOpen && { backgroundColor: colors.surfaceSecondary },
+              drawerOpen && { backgroundColor: colors.secondaryContainer },
             ]}
             accessibilityRole="button"
             accessibilityLabel={t('worker_ide.toggle_files')}
           >
-            <Icon name="sidebar" size={19} color={drawerOpen ? colors.primary : colors.text} />
+            <Icon name="sidebar" size={19} color={drawerOpen ? colors.onSecondaryContainer : colors.onSurface} />
           </TouchableOpacity>
 
           <View style={styles.statusWrap}>
@@ -596,20 +596,18 @@ export default function WorkerIdeScreen() {
             ) : (
               <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
             )}
-            <Text style={[styles.statusLabel, { color: colors.textSecondary }]} numberOfLines={1}>
+            <Text style={[styles.statusLabel, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
               {statusText}
             </Text>
           </View>
 
           <View style={styles.autoToggle}>
-            <Text style={[styles.autoLabel, { color: colors.textSecondary }]}>
+            <Text style={[styles.autoLabel, { color: colors.onSurfaceVariant }]}>
               {t('worker_ide.auto_deploy')}
             </Text>
-            <Switch
+            <M3Switch
               value={autoDeploy}
               onValueChange={setAutoDeploy}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              thumbColor="#FFF"
             />
           </View>
 
@@ -633,7 +631,7 @@ export default function WorkerIdeScreen() {
         )}
 
         {/* Open File Tabs Strip */}
-        <View style={[styles.tabsBar, { backgroundColor: colors.surface, borderBottomColor: colors.borderLight }]}>
+        <View style={[styles.tabsBar, { backgroundColor: colors.surfaceContainerLow, borderBottomColor: colors.outlineVariant + '55' }]}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -703,7 +701,7 @@ export default function WorkerIdeScreen() {
           <View
             style={[
               styles.breadcrumbBar,
-              { backgroundColor: colors.surfaceSecondary, borderBottomColor: colors.borderLight },
+              { backgroundColor: colors.surfaceContainer, borderBottomColor: colors.outlineVariant + '55' },
             ]}
           >
             <ScrollView

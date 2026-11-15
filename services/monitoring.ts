@@ -145,7 +145,7 @@ async function fetchHourly(zoneId: string): Promise<
     }
   }`;
 
-  const res = await api.getClient().post('https://api.cloudflare.com/client/v4/graphql', { query });
+  const res = await api.getClient().post('/graphql', { query });
   const groups = res.data?.data?.viewer?.zones?.[0]?.httpRequests1hGroups ?? [];
   return groups.map((g: any) => {
     const statuses = g.sum?.responseStatusMap ?? [];
