@@ -3,7 +3,12 @@ name: Build APK
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - ".github/**"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -24,11 +29,31 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Install dependencies
         run: npm ci
 
       - name: Expo prebuild
         run: npx expo prebuild --platform android --no-install
+
+      - name: Ensure debug keystore
+        working-directory: android
+        run: |
+          if [ ! -f app/debug.keystore ]; then
+            keytool -genkeypair -v -storetype PKCS12 \
+              -keystore app/debug.keystore -storepass android \
+              -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Switch release signing to debug key
+        working-directory: android
+        run: |
+          sed -i 's/signingConfigs\.release/signingConfigs.debug/g' app/build.gradle
+          sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a/' gradle.properties
 
       - name: Build Release APK
         working-directory: android
@@ -36,9 +61,12 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: cloudflare-mobile-release
-          path: android/app/build/outputs/apk/release/*.apk
-          retention-days: 30
+      - name: Publish to Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -n 1)
+          cp "$APK" cloudflare-mobile.apk
+          gh release create "build-${{ github.run_number }}" cloudflare-mobile.apk \
+            --title "Build #${{ github.run_number }}" \
+            --notes "Auto build from commit ${{ github.sha }}"
