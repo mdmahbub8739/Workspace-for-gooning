@@ -1,0 +1,38 @@
+name: Publish APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Build APK run ID (the long number in the run page URL)"
+        required: true
+      tag:
+        description: "Release tag"
+        required: true
+        default: "v1-test"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact from old run
+        uses: actions/download-artifact@v4
+        with:
+          name: cloudflare-mobile-release
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: out
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ls -lh out
+          gh release create "${{ inputs.tag }}" out/*.apk \
+            --title "${{ inputs.tag }}" \
+            --notes "Built from run ${{ inputs.run_id }}"
