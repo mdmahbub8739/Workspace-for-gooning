@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, FlatList, RefreshControl } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,7 @@ import { DurableObjectItem } from '@/services/cloudflare';
 export default function DurableObjectNamespaceScreen() {
   const { namespace, name } = useLocalSearchParams<{ namespace: string; name: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
 
   const [objects, setObjects] = useState<DurableObjectItem[]>([]);
@@ -41,7 +42,7 @@ export default function DurableObjectNamespaceScreen() {
 
   // The only text in a row is the object id, so it is laid out by hand in monospace.
   const renderObject = ({ item }: { item: DurableObjectItem }) => (
-    <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+    <View style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
       <IconCircle name="widgets" size={32} />
       <Text style={[styles.id, { color: colors.text }]} numberOfLines={1}>{item.id}</Text>
       <View>

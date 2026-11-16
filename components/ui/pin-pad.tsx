@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Vibration } from 'react-native';
+import { StyleSheet, Text, View, Vibration } from 'react-native';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
+import { M3Pressable } from '@/components/ui/m3-motion';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
 import { PIN_MAX } from '@/services/app-lock';
 
@@ -25,9 +27,9 @@ interface PinPadProps {
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-/** Numeric keypad with dots for the digits typed so far. */
+/** Numeric keypad with frosted glass keys and dots for digits typed so far. */
 export function PinPad({ title, error, errorNonce, length, minLength = 4, disabled, onSubmit, extraKey }: PinPadProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [pin, setPin] = useState('');
   const dots = length ?? Math.max(minLength, pin.length);
 
@@ -56,17 +58,21 @@ export function PinPad({ title, error, errorNonce, length, minLength = 4, disabl
   };
 
   const key = (content: React.ReactNode, onPress: () => void, label: string, faded = false) => (
-    <TouchableOpacity
+    <M3Pressable
       key={label}
-      style={[styles.key, { backgroundColor: faded ? 'transparent' : colors.surface }]}
+      style={[
+        styles.key,
+        faded ? { backgroundColor: 'transparent' } : getGlassStyle(colors, isDark, 'surface', Radius.full),
+      ]}
+      radius={Radius.full}
+      scaleTo={0.92}
       onPress={onPress}
       disabled={disabled}
-      activeOpacity={0.6}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
       {content}
-    </TouchableOpacity>
+    </M3Pressable>
   );
 
   return (
@@ -122,6 +128,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   digit: { fontSize: 28, fontWeight: '400' },
 });

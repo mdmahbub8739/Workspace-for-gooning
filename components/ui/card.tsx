@@ -1,7 +1,8 @@
-import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { M3Pressable } from '@/components/ui/m3-motion';
+import { getGlassStyle } from '@/components/ui/glass';
 
 interface CardProps {
   onPress?: () => void;
@@ -12,35 +13,25 @@ interface CardProps {
 }
 
 /**
- * Material Design 3 Card:
- * Tonal surface containers (`surfaceContainerLow` / `surfaceContainerLowest`)
- * with rounded 24dp geometry and animated press state layer when clickable.
+ * Frosted Glass Card:
+ * Translucent glass surfaces (`surface` / `elevated` / `subtle`) with specular
+ * 1px rims, backdrop blur on web, and tactile press feedback when interactive.
  */
 export function Card({ style, children, onPress, variant = 'default', compact }: CardProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
-  const isElevated = variant === 'elevated';
-  const isOutlined = variant === 'outlined';
-  const isFilled = variant === 'filled';
+  const level =
+    variant === 'elevated'
+      ? 'elevated'
+      : variant === 'outlined'
+        ? 'subtle'
+        : 'surface';
 
   const cardStyle: StyleProp<ViewStyle> = [
     styles.card,
-    {
-      backgroundColor: isElevated
-        ? colors.surfaceContainerLowest
-        : isFilled
-          ? colors.surfaceContainer
-          : colors.surfaceContainerLow,
-      borderWidth: isOutlined ? 1 : 0,
-      borderColor: isOutlined ? colors.outlineVariant : 'transparent',
-    },
-    isElevated && {
-      shadowColor: colors.cardShadow,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 1,
-      shadowRadius: 12,
-      elevation: 2,
-    },
+    getGlassStyle(colors, isDark, level, Radius.lg),
+    variant === 'outlined' && { borderColor: colors.glassBorder },
+    variant === 'filled' && { backgroundColor: colors.glassSurfaceElevated },
     compact && styles.compact,
     style,
   ];

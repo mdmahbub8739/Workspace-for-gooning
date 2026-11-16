@@ -6,6 +6,7 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
 import { ChipRow, Field, FieldLabel, Group, ListRow } from '@/components/ui/kit';
@@ -15,19 +16,20 @@ import { DNS_TEMPLATES, DnsTemplate, applyTemplate, brandLogoUrl } from '@/servi
 
 /** The provider's own logo in a neutral circle; falls back to a grey icon. */
 function BrandLogo({ template, size }: { template: DnsTemplate; size: number }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [failed, setFailed] = useState(false);
   const inner = Math.round(size * 0.6);
   return (
     <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.surfaceSecondary,
-      }}
+      style={[
+        {
+          width: size,
+          height: size,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        getGlassStyle(colors, isDark, 'subtle', size / 2),
+      ]}
     >
       {template.domain && !failed ? (
         <Image
@@ -52,7 +54,7 @@ const CATEGORIES: { key: DnsTemplate['category']; label: string }[] = [
 export default function DnsTemplatesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const [activeCategory, setActiveCategory] = useState<DnsTemplate['category']>('hosting');
   const [selected, setSelected] = useState<DnsTemplate | null>(null);
@@ -284,7 +286,7 @@ export default function DnsTemplatesScreen() {
                   <ListRow
                     key={i}
                     leading={
-                      <View style={[styles.typeBadge, { backgroundColor: colors.surfaceSecondary }]}>
+                      <View style={[styles.typeBadge, getGlassStyle(colors, isDark, 'subtle', Radius.xs)]}>
                         <Text style={[styles.typeText, { color: colors.text }]} numberOfLines={1}>{r.type}</Text>
                       </View>
                     }

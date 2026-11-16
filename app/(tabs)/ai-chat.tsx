@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
@@ -23,11 +22,14 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
 import { AiPaywall } from '@/components/ui/ai-paywall';
 import { Button } from '@/components/ui/button';
+import { M3Spinner } from '@/components/ui/loading';
 import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
 import { promptReport } from '@/components/ui/error-report';
 import { useAuth } from '@/contexts/auth';
@@ -125,10 +127,11 @@ function TypingDots({ color }: { color: string }) {
 export default function AiChatScreen() {
   const { zoneId, zoneName } = useLocalSearchParams<{ zoneId?: string; zoneName?: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId, accounts } = useAuth();
   const { quota } = useAiQuota();
   const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [items, setItems] = useState<ChatItem[]>([]);
@@ -247,7 +250,9 @@ export default function AiChatScreen() {
         key={a.proposal.id}
         style={[
           styles.actionCard,
-          { backgroundColor: danger ? colors.errorContainer : colors.surfaceContainerLow },
+          danger
+            ? getTintedGlassStyle(colors, isDark, colors.errorContainer + '8F', 18)
+            : getGlassStyle(colors, isDark, 'surface', Radius.lg),
         ]}
       >
         <View style={styles.actionHead}>
@@ -299,7 +304,7 @@ export default function AiChatScreen() {
             </View>
           </View>
         )}
-        {a.status === 'applying' && <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: Spacing.sm }} />}
+        {a.status === 'applying' && <M3Spinner size="sm" color={colors.primary} style={{ marginTop: Spacing.sm }} />}
         {a.status === 'applied' && (
           <View style={styles.actionResult}>
             <Icon name="check-circle" size={14} color={colors.success} />
@@ -320,7 +325,13 @@ export default function AiChatScreen() {
     if (item.role === 'user') {
       return (
         <M3Entrance index={0} distance={8} style={styles.userRow}>
-          <View style={[styles.userBubble, { backgroundColor: colors.primaryContainer }]}>
+          <View
+            style={[
+              styles.userBubble,
+              getTintedGlassStyle(colors, isDark, colors.primaryContainer + '94', 20),
+              { borderBottomRightRadius: 6 },
+            ]}
+          >
             <Text style={[styles.userText, { color: colors.onPrimaryContainer }]}>{item.content}</Text>
           </View>
         </M3Entrance>
@@ -331,7 +342,13 @@ export default function AiChatScreen() {
         <Orb size={32}><Icon name="sparkles" size={15} color={colors.onPrimary} /></Orb>
         <View style={styles.assistantCol}>
           {!!item.content && (
-            <View style={[styles.assistantBubble, { backgroundColor: colors.surfaceContainerHigh }]}>
+            <View
+              style={[
+                styles.assistantBubble,
+                getGlassStyle(colors, isDark, 'surface', 22),
+                { borderTopLeftRadius: 6 },
+              ]}
+            >
               <Text style={[styles.assistantText, { color: colors.onSurface }]}>{item.content}</Text>
             </View>
           )}
@@ -395,11 +412,21 @@ export default function AiChatScreen() {
                   <M3Entrance key={s.text} index={idx + 1} style={styles.suggestionSlot}>
                     <M3Pressable
                       radius={Radius.lg}
-                      style={[styles.suggestion, { backgroundColor: colors.surfaceContainerLow }]}
+                      style={[styles.suggestion, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
                       onPress={() => send(s.text)}
                       accessibilityRole="button"
                     >
-                      <View style={[styles.suggestionIcon, { backgroundColor: colors.secondaryContainer }]}>
+                      <View
+                        style={[
+                          styles.suggestionIcon,
+                          {
+                            backgroundColor: colors.secondaryContainer + '8F',
+                            borderWidth: StyleSheet.hairlineWidth,
+                            borderColor: colors.glassBorderSubtle,
+                            borderTopColor: colors.glassHighlight,
+                          },
+                        ]}
+                      >
                         <Icon name={s.icon} size={17} color={colors.onSecondaryContainer} />
                       </View>
                       <Text style={[styles.suggestionText, { color: colors.onSurface }]}>{s.text}</Text>
@@ -421,7 +448,13 @@ export default function AiChatScreen() {
               ListFooterComponent={sending ? (
                 <View style={styles.assistantRow}>
                   <Orb size={32}><Icon name="sparkles" size={15} color={colors.onPrimary} /></Orb>
-                  <View style={[styles.assistantBubble, { backgroundColor: colors.surfaceContainerHigh }]}>
+                  <View
+                    style={[
+                      styles.assistantBubble,
+                      getGlassStyle(colors, isDark, 'surface', 22),
+                      { borderTopLeftRadius: 6 },
+                    ]}
+                  >
                     <TypingDots color={colors.primary} />
                   </View>
                 </View>
@@ -430,10 +463,10 @@ export default function AiChatScreen() {
           )}
 
           {/* Composer */}
-          <View style={styles.composerWrap}>
+          <View style={[styles.composerWrap, { paddingBottom: Math.max(insets.bottom + 82, 92) }]}>
             <View style={styles.chipRow}>
               {!!zoneName && (
-                <View style={[styles.chip, { backgroundColor: colors.surfaceContainer }]}>
+                <View style={[styles.chip, getGlassStyle(colors, isDark, 'subtle', Radius.sm)]}>
                   <Icon name="globe" size={13} color={colors.onSurfaceVariant} />
                   <Text style={[styles.chipText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
                     {zoneName}
@@ -447,9 +480,9 @@ export default function AiChatScreen() {
                 accessibilityState={{ checked: autoApply }}
                 style={[
                   styles.chip,
-                  {
-                    backgroundColor: autoApply ? colors.secondaryContainer : colors.surfaceContainer,
-                  },
+                  autoApply
+                    ? getTintedGlassStyle(colors, isDark, colors.secondaryContainer + '8F', 16)
+                    : getGlassStyle(colors, isDark, 'subtle', Radius.sm),
                 ]}
               >
                 <Icon
@@ -469,7 +502,7 @@ export default function AiChatScreen() {
               </M3Pressable>
             </View>
 
-            <View style={[styles.composer, { backgroundColor: colors.surfaceContainerHigh }]}>
+            <View style={[styles.composer, getGlassStyle(colors, isDark, 'elevated', 28)]}>
               <TextInput
                 style={[styles.input, { color: colors.onSurface }]}
                 placeholder={t('ai_chat.placeholder')}
@@ -489,12 +522,12 @@ export default function AiChatScreen() {
                 style={[
                   styles.sendBtn,
                   {
-                    backgroundColor: canSend ? colors.primary : colors.surfaceContainerHighest,
+                    backgroundColor: canSend ? colors.primary : colors.glassSurfaceSubtle,
                   },
                 ]}
               >
                 {sending ? (
-                  <ActivityIndicator size="small" color={colors.onSurfaceVariant} />
+                  <M3Spinner size="sm" color={colors.onSurfaceVariant} />
                 ) : (
                   <Icon
                     name="send"

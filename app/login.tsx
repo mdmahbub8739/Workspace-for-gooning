@@ -22,6 +22,7 @@ import { beginOAuth, OAUTH_APP_RETURN } from '@/services/oauth';
 import { useAuth } from '@/contexts/auth';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
 import { Button } from '@/components/ui/button';
 import { BrandGradient, BrandMark } from '@/components/ui/brand';
 import { SectionHeader } from '@/components/ui/section-header';
@@ -168,7 +169,8 @@ export default function LoginScreen() {
                 stateLayerColor={colors.onPrimaryContainer}
                 style={[
                   styles.back,
-                  { top: insets.top + Spacing.md, backgroundColor: colors.surfaceContainerLowest + 'C4' },
+                  getGlassStyle(colors, isDark, 'surface', 22),
+                  { top: insets.top + Spacing.md },
                 ]}
                 hitSlop={8}
                 accessibilityRole="button"
@@ -198,8 +200,8 @@ export default function LoginScreen() {
 
           <View style={styles.body}>
             <M3Entrance index={1} distance={14}>
-              {/* Tonal M3 Auth Surface */}
-              <View style={[styles.form, { backgroundColor: colors.surfaceContainerLow }]}>
+              {/* Frosted Glass Auth Surface */}
+              <View style={[styles.form, getGlassStyle(colors, isDark, 'elevated', Radius.xl)]}>
                 <Text style={[styles.formTitle, { color: colors.onSurface }]}>{t('auth.sign_in')}</Text>
                 <Text style={[styles.formSubtitle, { color: colors.onSurfaceVariant }]}>{t('auth.oauth_hint')}</Text>
 
@@ -217,24 +219,24 @@ export default function LoginScreen() {
                   radius={Radius.md}
                   accessibilityRole="button"
                   accessibilityState={{ expanded: showAdvanced }}
-                  style={[styles.advanced, { borderTopColor: colors.outlineVariant + '55' }]}
+                  style={[styles.advanced, { borderTopColor: colors.glassBorderSubtle }]}
                 >
                   <View style={styles.advancedText}>
                     <Text style={[styles.advancedTitle, { color: colors.onSurface }]}>{t('auth.advanced')}</Text>
                     <Text style={[styles.advancedHint, { color: colors.onSurfaceVariant }]}>{t('auth.advanced_hint')}</Text>
                   </View>
-                  <View style={[styles.expandBadge, { backgroundColor: colors.surfaceContainerHigh }]}>
+                  <View style={[styles.expandBadge, getGlassStyle(colors, isDark, 'subtle', 16)]}>
                     <Icon name={showAdvanced ? 'chevron-up' : 'chevron-down'} size={18} color={colors.onSurfaceVariant} />
                   </View>
                 </M3Pressable>
 
                 {showAdvanced && (
                   <M3Entrance index={0} distance={8}>
-                    {/* Animated Material 3 Segmented Button */}
+                    {/* Animated Frosted Glass Segmented Control */}
                     <View
                       style={[
                         styles.segment,
-                        { backgroundColor: colors.surfaceContainerHigh, borderColor: colors.outlineVariant },
+                        getGlassStyle(colors, isDark, 'subtle', Radius.full),
                       ]}
                       onLayout={(e) => setSegWidth(e.nativeEvent.layout.width)}
                     >
@@ -243,7 +245,7 @@ export default function LoginScreen() {
                           pointerEvents="none"
                           style={[
                             styles.segmentIndicator,
-                            { backgroundColor: colors.secondaryContainer },
+                            getTintedGlassStyle(colors, isDark, colors.secondaryContainer + '94', 16),
                             segmentIndicatorStyle,
                           ]}
                         />

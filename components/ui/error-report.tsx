@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme, ThemeColors } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
 import { buildReport, issueUrl, mailtoUrl, SUPPORT_EMAIL } from '@/services/error-log';
 
@@ -58,11 +59,12 @@ export function ErrorReportButtons({ error, colors: override }: ErrorReportButto
   const { t } = useTranslation();
   const theme = useTheme();
   const colors = override ?? theme.colors;
+  const buttonGlass = getGlassStyle(colors, theme.isDark, 'subtle', Radius.full);
 
   return (
     <View style={styles.row}>
       <TouchableOpacity
-        style={[styles.button, { borderColor: colors.border, backgroundColor: colors.surface }]}
+        style={[styles.button, buttonGlass]}
         onPress={() => sendReportByEmail(t, error)}
         activeOpacity={0.7}
       >
@@ -70,7 +72,7 @@ export function ErrorReportButtons({ error, colors: override }: ErrorReportButto
         <Text style={[styles.label, { color: colors.text }]} numberOfLines={1}>{t('report.email')}</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.button, { borderColor: colors.border, backgroundColor: colors.surface }]}
+        style={[styles.button, buttonGlass]}
         onPress={() => openReportIssue(t, error)}
         activeOpacity={0.7}
       >

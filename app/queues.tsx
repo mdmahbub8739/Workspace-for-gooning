@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,7 @@ import { Queue } from '@/services/cloudflare';
 
 export default function QueuesScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
 
   const [queues, setQueues] = useState<Queue[]>([]);
@@ -54,7 +55,7 @@ export default function QueuesScreen() {
     const isPaused = item.settings?.delivery_paused;
     const delay = item.settings?.delivery_delay;
     return (
-      <View style={[styles.queue, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+      <View style={[styles.queue, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
         <IconCircle name="layers" tone={isPaused ? 'warning' : 'neutral'} />
         <View style={styles.queueBody}>
           <Text style={[styles.queueName, { color: colors.text }]} numberOfLines={1}>{item.queue_name}</Text>

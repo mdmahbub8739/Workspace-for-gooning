@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
+import { AmbientGlassBackdrop, getGlassStyle } from '@/components/ui/glass';
+import { Loading } from '@/components/ui/loading';
 import { PinPad } from '@/components/ui/pin-pad';
 import { PatternPad } from '@/components/ui/pattern-pad';
 import { useTheme } from '@/hooks/use-theme';
@@ -10,7 +12,7 @@ import * as appLock from '@/services/app-lock';
 
 export function LockGate({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [locked, setLocked] = useState<boolean | null>(null); // null = checking
   const [settings, setSettings] = useState<appLock.LockSettings | null>(null);
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -104,7 +106,8 @@ export function LockGate({ children }: { children: React.ReactNode }) {
     <>
       {children}
       {locked !== false && (
-        <View style={[StyleSheet.absoluteFill, styles.container, { backgroundColor: colors.background }]}>
+        <View style={[StyleSheet.absoluteFill, styles.container, { backgroundColor: colors.canvas }]}>
+          <AmbientGlassBackdrop />
           {locked === true && settings?.method === 'pin' && (
             <PinPad
               title={t('lock.enter_pin')}
@@ -133,10 +136,12 @@ export function LockGate({ children }: { children: React.ReactNode }) {
               )}
             </>
           )}
-          {(locked === null || settings?.method === 'none' || !settings) && (
+          {locked === null ? (
+            <Loading variant="splash" />
+          ) : (settings?.method === 'none' || !settings) ? (
             <>
-              <View style={[styles.iconWrap, { backgroundColor: colors.primary + '15' }]}>
-                <Icon name="lock" size={40} color={colors.primary} />
+              <View style={[styles.iconWrap, getGlassStyle(colors, isDark, 'surface', 44)]}>
+                <Icon name="lock" size={38} color={colors.primary} />
               </View>
               <Text style={[styles.title, { color: colors.text }]}>{t('lock.title')}</Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('lock.subtitle')}</Text>
@@ -151,7 +156,7 @@ export function LockGate({ children }: { children: React.ReactNode }) {
                 </TouchableOpacity>
               )}
             </>
-          )}
+          ) : null}
         </View>
       )}
     </>

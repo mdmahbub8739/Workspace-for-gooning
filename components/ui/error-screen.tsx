@@ -17,7 +17,8 @@ interface ErrorScreenProps {
  */
 export function ErrorScreen({ error, retry }: ErrorScreenProps) {
   const { t } = useTranslation();
-  const colors = Colors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const colors = Colors[scheme];
 
   useEffect(() => {
     logError('render', error);
@@ -25,16 +26,16 @@ export function ErrorScreen({ error, retry }: ErrorScreenProps) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1, backgroundColor: colors.canvas }}
       contentContainerStyle={styles.content}
     >
-      <View style={[styles.iconWrap, { backgroundColor: colors.error + '14' }]}>
+      <View style={[styles.iconWrap, { backgroundColor: colors.error + '1C', borderWidth: 1, borderColor: colors.error + '36' }]}>
         <Icon name="warning" size={28} color={colors.error} />
       </View>
       <Text style={[styles.title, { color: colors.text }]}>{t('report.crash_title')}</Text>
       <Text style={[styles.body, { color: colors.textSecondary }]}>{t('report.crash_body')}</Text>
 
-      <View style={[styles.detail, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+      <View style={[styles.detail, { backgroundColor: colors.glassSurface, borderColor: colors.glassBorder }]}>
         <Text style={[styles.detailText, { color: colors.textSecondary }]} selectable>
           {redact(error?.message || String(error))}
         </Text>

@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  StyleSheet, View, Text, ScrollView, RefreshControl, Alert, ActivityIndicator,
+  StyleSheet, View, Text, ScrollView, RefreshControl, Alert,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
-import { Loading } from '@/components/ui/loading';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
+import { Loading, M3Spinner } from '@/components/ui/loading';
 import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Group, IconCircle, ListRow, StatCard, ToggleRow } from '@/components/ui/kit';
@@ -35,7 +36,7 @@ interface Tile {
 export default function ZoneDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { permissions } = useAuth();
   const perms = permissions ?? { dns: true, ssl: true, firewall: true, cache: true, analytics: true, pageRules: true } as any;
 
@@ -242,7 +243,7 @@ export default function ZoneDetailScreen() {
       >
         <View style={styles.inner}>
           <M3Entrance index={0}>
-            <View style={[styles.hero, { backgroundColor: colors.primaryContainer }]}>
+            <View style={[styles.hero, getTintedGlassStyle(colors, isDark, colors.primaryContainer + '8F', 24)]}>
               <View style={[styles.heroIcon, { backgroundColor: colors.primary }]}>
                 <Icon name="globe" size={22} color={colors.onPrimary} />
               </View>
@@ -303,7 +304,7 @@ export default function ZoneDetailScreen() {
                 title={t('zone.activation_check')}
                 subtitle={t('zone.activation_check_desc')}
                 onPress={checkingActivation ? undefined : handleActivationCheck}
-                trailing={checkingActivation ? <ActivityIndicator size="small" color={colors.onSurfaceVariant} /> : undefined}
+                trailing={checkingActivation ? <M3Spinner size="sm" color={colors.onSurfaceVariant} /> : undefined}
               />
             </Group>
           </M3Entrance>
@@ -320,7 +321,7 @@ export default function ZoneDetailScreen() {
                       radius={Radius.lg}
                       style={[
                         styles.tile,
-                        { backgroundColor: colors.surfaceContainerLow },
+                        getGlassStyle(colors, isDark, 'surface', Radius.lg),
                         off && styles.tileOff,
                       ]}
                       onPress={() => (editing ? zoneTiles.toggle(item.path) : open(item.path))}

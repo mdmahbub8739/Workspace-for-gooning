@@ -244,7 +244,7 @@ export function SyntaxEditor({
 
   return (
     <ScrollView
-      style={[styles.outerScroll, { backgroundColor: colors.background }]}
+      style={[styles.outerScroll, { backgroundColor: colors.canvas }]}
       contentContainerStyle={styles.outerContent}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator
@@ -256,8 +256,8 @@ export function SyntaxEditor({
             styles.gutter,
             {
               width: gutterWidth,
-              backgroundColor: colors.surfaceSecondary,
-              borderRightColor: colors.borderLight,
+              backgroundColor: colors.glassSurfaceSubtle,
+              borderRightColor: colors.glassBorderSubtle,
               minHeight: contentHeight,
             },
           ]}

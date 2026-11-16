@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
+import { M3Pressable } from '@/components/ui/m3-motion';
 import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -23,7 +25,7 @@ const TABS: RuleType[] = ['transform', 'redirect', 'cache'];
 export default function RulesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [selectedTab, setSelectedTab] = useState<RuleType>('transform');
@@ -254,10 +256,11 @@ export default function RulesScreen() {
   if (loading) return <Loading />;
 
   const renderRule = ({ item }: { item: TransformRule }) => (
-    <TouchableOpacity
-      activeOpacity={0.7}
+    <M3Pressable
+      radius={Radius.lg}
+      scaleTo={0.985}
       onPress={() => openEdit(item)}
-      style={[styles.rule, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+      style={[styles.rule, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
     >
       <View style={styles.ruleBody}>
         <Badge label={item.action} variant={item.enabled ? 'success' : 'default'} />
@@ -278,7 +281,7 @@ export default function RulesScreen() {
       >
         <Icon name="trash" size={16} color={colors.textTertiary} />
       </TouchableOpacity>
-    </TouchableOpacity>
+    </M3Pressable>
   );
 
   return (

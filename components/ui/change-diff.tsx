@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
 import { FieldChange } from '@/services/change-history';
 
@@ -18,7 +19,7 @@ const LABEL_KEYS: Record<string, string> = {
 /** Old value, arrow, new value for each changed field. Used before applying a change and in History. */
 export function ChangeDiff({ changes }: { changes: FieldChange[] }) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const value = (v: string | null) => {
     if (v === null) return t('history.empty_value');
@@ -29,9 +30,9 @@ export function ChangeDiff({ changes }: { changes: FieldChange[] }) {
   };
 
   return (
-    <View style={[styles.box, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+    <View style={[styles.box, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
       {changes.map((c, i) => (
-        <View key={c.field} style={[styles.row, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight }]}>
+        <View key={c.field} style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.glassBorderSubtle }]}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>{t(c.label ?? LABEL_KEYS[c.field] ?? c.field)}</Text>
           <View style={styles.values}>
             {c.before !== null && (
@@ -51,7 +52,7 @@ export function ChangeDiff({ changes }: { changes: FieldChange[] }) {
 }
 
 const styles = StyleSheet.create({
-  box: { borderWidth: 1, borderRadius: Radius.lg, overflow: 'hidden' },
+  box: { borderRadius: Radius.lg, overflow: 'hidden' },
   row: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.xs },
   label: { fontSize: FontSize.xs, fontWeight: '500' },
   values: { gap: 2 },

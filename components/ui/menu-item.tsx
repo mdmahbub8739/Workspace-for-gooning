@@ -15,18 +15,14 @@ interface MenuItemProps {
 }
 
 export function MenuItem({ icon, title, subtitle, onPress, trailing, danger }: MenuItemProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const showArrow = trailing === undefined && !!onPress;
+  const iconColor = danger ? colors.error : (isDark ? colors.primaryLight : colors.primary);
 
   const content = (
     <>
-      <View
-        style={[
-          styles.iconWrap,
-          { backgroundColor: danger ? colors.errorContainer : colors.secondaryContainer },
-        ]}
-      >
-        <Icon name={icon} size={19} color={danger ? colors.onErrorContainer : colors.onSecondaryContainer} />
+      <View style={styles.iconWrap}>
+        <Icon name={icon} size={20} color={iconColor} />
       </View>
       <View style={styles.content}>
         <Text style={[styles.title, { color: danger ? colors.error : colors.onSurface }]}>{title}</Text>
@@ -46,7 +42,7 @@ export function MenuItem({ icon, title, subtitle, onPress, trailing, danger }: M
       <M3Pressable
         onPress={onPress}
         scaleTo={0.985}
-        style={[styles.container, { backgroundColor: colors.surfaceContainerLow }]}
+        style={styles.container}
       >
         {content}
       </M3Pressable>
@@ -54,7 +50,7 @@ export function MenuItem({ icon, title, subtitle, onPress, trailing, danger }: M
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceContainerLow }]}>
+    <View style={styles.container}>
       {content}
     </View>
   );
@@ -64,15 +60,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 13,
     paddingHorizontal: Spacing.lg,
-    minHeight: 60,
+    minHeight: 56,
     gap: Spacing.md,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },

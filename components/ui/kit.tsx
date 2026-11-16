@@ -1,38 +1,64 @@
 import { useState } from 'react';
 import {
-  ScrollView, StyleProp, StyleSheet, Text, TextInput, TextInputProps, TouchableOpacity, View, ViewStyle,
+  Platform,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputProps,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
 import { M3Pressable, M3Switch } from '@/components/ui/m3-motion';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
 
 /**
- * Material You building blocks shared across the application.
+ * Frosted glass UI building blocks shared across the application.
  */
 
-// ─── IconCircle (M3 Tonal Squircle) ───────────────────────────────────────────
+// ─── IconCircle (Frosted Tonal Squircle) ──────────────────────────────────────
 
 interface IconCircleProps {
   name: IconName;
   size?: number;
-  /** 'neutral' (default) uses M3 secondaryContainer; state tones use M3 semantic containers. */
   tone?: 'neutral' | 'primary' | 'accent' | 'success' | 'warning' | 'error';
 }
 
 export function IconCircle({ name, size = 40, tone = 'neutral' }: IconCircleProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const palette =
     tone === 'primary' || tone === 'accent'
-      ? { bg: colors.primaryContainer, fg: colors.onPrimaryContainer }
+      ? { bg: colors.primaryContainer, fg: isDark ? colors.primaryLight : colors.primary }
       : tone === 'success'
-        ? { bg: colors.successContainer, fg: colors.onSuccessContainer }
+        ? { bg: colors.successContainer, fg: colors.success }
         : tone === 'warning'
-          ? { bg: colors.warningContainer, fg: colors.onWarningContainer }
+          ? { bg: colors.warningContainer, fg: colors.warning }
           : tone === 'error'
-            ? { bg: colors.errorContainer, fg: colors.onErrorContainer }
-            : { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer };
+            ? { bg: colors.errorContainer, fg: colors.error }
+            : { bg: colors.secondaryContainer, fg: isDark ? colors.primaryLight : colors.primary };
+
+  // Compact list-row icon slot: clean naked accent icon with zero boxy clutter
+  if (size <= 42) {
+    return (
+      <View
+        style={{
+          width: 28,
+          height: 28,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name={name} size={Math.round(size * 0.52)} color={palette.fg} />
+      </View>
+    );
+  }
 
   return (
     <View
@@ -42,15 +68,18 @@ export function IconCircle({ name, size = 40, tone = 'neutral' }: IconCircleProp
         borderRadius: Math.round(size * 0.36),
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: palette.bg,
+        backgroundColor: palette.bg + '8F',
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.glassBorderSubtle,
+        borderTopColor: colors.glassHighlight,
       }}
     >
-      <Icon name={name} size={Math.round(size * 0.48)} color={palette.fg} />
+      <Icon name={name} size={Math.round(size * 0.46)} color={palette.fg} />
     </View>
   );
 }
 
-// ─── Chips (M3 Filter Chips) ─────────────────────────────────────────────────
+// ─── Chips (Frosted Glass Filter Chips) ──────────────────────────────────────
 
 interface ChipProps {
   label: string;
@@ -59,7 +88,7 @@ interface ChipProps {
 }
 
 export function Chip({ label, active, onPress }: ChipProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   return (
     <M3Pressable
       onPress={onPress}
@@ -70,11 +99,10 @@ export function Chip({ label, active, onPress }: ChipProps) {
       accessibilityState={{ selected: !!active }}
       style={[
         styles.chip,
-        {
-          backgroundColor: active ? colors.secondaryContainer : colors.surfaceContainerLow,
-          borderColor: active ? 'transparent' : colors.outlineVariant,
-          borderWidth: active ? 0 : 1,
-        },
+        active
+          ? getTintedGlassStyle(colors, isDark, colors.secondaryContainer + (isDark ? '96' : 'A3'), 16)
+          : getGlassStyle(colors, isDark, 'subtle', Radius.sm),
+        active && { borderColor: colors.primary + '55' },
       ]}
     >
       {active && <Icon name="check" size={14} color={colors.onSecondaryContainer} />}
@@ -131,7 +159,7 @@ export function ChipRow<T extends string>({ options, value, onChange, wrap, styl
   );
 }
 
-// ─── SearchBar (M3 Pill Search Bar) ───────────────────────────────────────────
+// ─── SearchBar (Frosted Glass Pill Search Bar) ────────────────────────────────
 
 interface SearchBarProps extends Pick<TextInputProps, 'onSubmitEditing' | 'autoFocus'> {
   value: string;
@@ -141,24 +169,31 @@ interface SearchBarProps extends Pick<TextInputProps, 'onSubmitEditing' | 'autoF
 }
 
 export function SearchBar({ value, onChangeText, placeholder, style, ...rest }: SearchBarProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [focused, setFocused] = useState(false);
 
   return (
     <View
       style={[
         styles.search,
+        getGlassStyle(colors, isDark, 'surface', Radius.full),
         {
-          backgroundColor: colors.surfaceContainerHigh,
-          borderColor: focused ? colors.primary : 'transparent',
-          borderWidth: 1.5,
+          borderColor: focused ? colors.primary : colors.glassBorder,
+          borderWidth: focused ? 1 : StyleSheet.hairlineWidth,
         },
+        focused &&
+          Platform.OS === 'web' &&
+          ({ boxShadow: `0 0 0 3px ${colors.primary}22` } as unknown as ViewStyle),
         style,
       ]}
     >
       <Icon name="search" size={20} color={focused ? colors.primary : colors.onSurfaceVariant} />
       <TextInput
-        style={[styles.searchInput, { color: colors.onSurface }]}
+        style={[
+          styles.searchInput,
+          { color: colors.onSurface },
+          Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null,
+        ]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -179,17 +214,17 @@ export function SearchBar({ value, onChangeText, placeholder, style, ...rest }: 
   );
 }
 
-// ─── Group + rows (M3 Tonal Surface Lists) ───────────────────────────────────
+// ─── Group + rows (Frosted Glass Surface Lists) ───────────────────────────────
 
 export function Group({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const rows = (Array.isArray(children) ? children.flat() : [children]).filter(Boolean);
   return (
-    <View style={[styles.group, { backgroundColor: colors.surfaceContainerLow }, style]}>
+    <View style={[styles.group, style]}>
       {rows.map((child, i) => (
         <View
           key={i}
-          style={i > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.outlineVariant + '66' } : undefined}
+          style={[styles.groupItem, getGlassStyle(colors, isDark, 'surface', 18)]}
         >
           {child}
         </View>
@@ -286,12 +321,12 @@ export function ValueRow({ label, value, mono }: { label: string; value: string;
   );
 }
 
-// ─── Stat (M3 Tonal Metric Card) ─────────────────────────────────────────────
+// ─── Stat (Frosted Glass Metric Card) ────────────────────────────────────────
 
 export function StatCard({ label, value, hint, style }: { label: string; value: string; hint?: string; style?: StyleProp<ViewStyle> }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   return (
-    <View style={[styles.stat, { backgroundColor: colors.surfaceContainer }, style]}>
+    <View style={[styles.stat, getGlassStyle(colors, isDark, 'surface', Radius.lg), style]}>
       <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{label}</Text>
       <Text style={[styles.statValue, { color: colors.onSurface }]} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
       {!!hint && <Text style={[styles.statHint, { color: colors.textTertiary }]} numberOfLines={1}>{hint}</Text>}
@@ -299,7 +334,7 @@ export function StatCard({ label, value, hint, style }: { label: string; value: 
   );
 }
 
-// ─── Form field (M3 Filled Input with Focus Outline) ─────────────────────────
+// ─── Form field (Frosted Glass Input with Focus Glow) ─────────────────────────
 
 interface FieldProps extends TextInputProps {
   label?: string;
@@ -308,7 +343,7 @@ interface FieldProps extends TextInputProps {
 }
 
 export function Field({ label, hint, mono, style, multiline, onFocus, onBlur, ...props }: FieldProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [focused, setFocused] = useState(false);
 
   return (
@@ -327,12 +362,16 @@ export function Field({ label, hint, mono, style, multiline, onFocus, onBlur, ..
         }}
         style={[
           styles.fieldInput,
+          getGlassStyle(colors, isDark, 'subtle', Radius.md) as TextStyle,
           {
-            backgroundColor: colors.surfaceContainerHigh,
-            borderColor: focused ? colors.primary : 'transparent',
-            borderWidth: 1.5,
+            borderColor: focused ? colors.primary : colors.glassBorder,
+            borderWidth: focused ? 1 : StyleSheet.hairlineWidth,
             color: colors.onSurface,
           },
+          focused &&
+            Platform.OS === 'web' &&
+            ({ boxShadow: `0 0 0 3px ${colors.primary}20` } as unknown as TextStyle),
+          Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null,
           multiline && styles.fieldMultiline,
           mono && styles.mono,
           style,
@@ -349,29 +388,35 @@ export function FieldLabel({ children }: { children: string }) {
   return <Text style={[styles.fieldLabel, { color: colors.onSurfaceVariant, marginTop: Spacing.md }]}>{children}</Text>;
 }
 
-// ─── Feedback (M3 Semantic Container Banner) ──────────────────────────────────
+// ─── Feedback (Translucent Frosted Semantic Banner) ───────────────────────────
 
 export function Banner({ message, tone = 'error' }: { message: string; tone?: 'error' | 'warning' | 'info' }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const palette =
     tone === 'error'
-      ? { bg: colors.errorContainer, fg: colors.onErrorContainer }
+      ? { bg: colors.errorContainer, fg: colors.onErrorContainer, rim: colors.error }
       : tone === 'warning'
-        ? { bg: colors.warningContainer, fg: colors.onWarningContainer }
-        : { bg: colors.infoContainer, fg: colors.onInfoContainer };
+        ? { bg: colors.warningContainer, fg: colors.onWarningContainer, rim: colors.warning }
+        : { bg: colors.infoContainer, fg: colors.onInfoContainer, rim: colors.info };
 
   return (
-    <View style={[styles.banner, { backgroundColor: palette.bg }]}>
+    <View
+      style={[
+        styles.banner,
+        getTintedGlassStyle(colors, isDark, palette.bg + '94', 16),
+        { borderColor: palette.rim + '40' },
+      ]}
+    >
       <Icon name={tone === 'info' ? 'info' : tone === 'warning' ? 'warning' : 'error-circle'} size={18} color={palette.fg} />
       <Text style={[styles.bannerText, { color: palette.fg }]}>{message}</Text>
     </View>
   );
 }
 
-// ─── Fab (Material You Extended Squircle FAB) ─────────────────────────────────
+// ─── Fab (Frosted Extended Glass FAB) ─────────────────────────────────────────
 
 export function Fab({ label, icon = 'plus', onPress }: { label: string; icon?: IconName; onPress: () => void }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <M3Pressable
@@ -383,8 +428,9 @@ export function Fab({ label, icon = 'plus', onPress }: { label: string; icon?: I
       accessibilityLabel={label}
       style={[
         styles.fab,
+        getTintedGlassStyle(colors, isDark, colors.primaryContainer + (isDark ? '9E' : 'B2'), 24),
         {
-          backgroundColor: colors.primaryContainer,
+          borderColor: colors.primary + '50',
           bottom: insets.bottom + Spacing.lg,
           shadowColor: colors.cardShadow,
         },
@@ -399,8 +445,8 @@ export function Fab({ label, icon = 'plus', onPress }: { label: string; icon?: I
 const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
-    height: 36,
-    paddingHorizontal: Spacing.lg,
+    height: 34,
+    paddingHorizontal: Spacing.md + 2,
     borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -415,20 +461,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    height: 52,
+    height: 48,
     paddingHorizontal: Spacing.lg,
     borderRadius: Radius.full,
   },
   searchInput: { flex: 1, fontSize: FontSize.md },
 
-  group: { borderRadius: Radius.lg, overflow: 'hidden' },
+  group: { gap: Spacing.sm },
+  groupItem: { borderRadius: 18, overflow: 'hidden' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 14,
-    minHeight: 60,
+    paddingVertical: 13,
+    minHeight: 56,
   },
   rowBody: { flex: 1, gap: 2 },
   rowTitle: { fontSize: FontSize.md, fontWeight: '500' },
@@ -470,13 +517,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 56,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 6,
+    height: 50,
+    paddingHorizontal: Spacing.lg + 2,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 3,
     overflow: 'hidden',
   },
   fabText: { fontSize: FontSize.md, fontWeight: '600', letterSpacing: 0.1 },

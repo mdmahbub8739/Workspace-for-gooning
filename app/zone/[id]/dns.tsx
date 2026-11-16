@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   StyleSheet, View, Text, FlatList, ScrollView, RefreshControl, TouchableOpacity,
-  Alert, TextInput, Modal, Switch, ActivityIndicator,
+  Alert, TextInput, Modal, Switch,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { addChange, snapshot } from '@/services/change-history';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
-import { Loading } from '@/components/ui/loading';
+import { getBackdropBlurStyle, getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
+import { M3Pressable } from '@/components/ui/m3-motion';
+import { Loading, M3Spinner } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Card } from '@/components/ui/card';
 import { HeaderButton } from '@/components/ui/header-button';
@@ -26,7 +28,7 @@ const RECORD_TYPES: DNSRecordType[] = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 
 export default function DNSScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [records, setRecords] = useState<DNSRecord[]>([]);
@@ -203,13 +205,14 @@ export default function DNSScreen() {
   ];
 
   const renderRecord = ({ item }: { item: DNSRecord }) => (
-    <TouchableOpacity
-      activeOpacity={0.7}
+    <M3Pressable
+      radius={Radius.lg}
+      scaleTo={0.985}
       onPress={() => router.push({ pathname: `/zone/[id]/dns-edit` as any, params: { id, recordId: item.id } })}
       onLongPress={() => handleDelete(item)}
-      style={[styles.record, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+      style={[styles.record, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
     >
-      <View style={[styles.typeBadge, { backgroundColor: colors.surfaceSecondary }]}>
+      <View style={[styles.typeBadge, getGlassStyle(colors, isDark, 'subtle', Radius.sm)]}>
         <Text style={[styles.typeText, { color: colors.text }]} numberOfLines={1}>{item.type}</Text>
       </View>
 
@@ -242,7 +245,7 @@ export default function DNSScreen() {
       >
         <Icon name="trash" size={16} color={colors.textTertiary} />
       </TouchableOpacity>
-    </TouchableOpacity>
+    </M3Pressable>
   );
 
   if (loading) return <Loading />;
@@ -261,7 +264,7 @@ export default function DNSScreen() {
       />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Search */}
-        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+        <View style={[styles.searchBar, getGlassStyle(colors, isDark, 'surface', Radius.full)]}>
           <Icon name="search" size={18} color={colors.textTertiary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
@@ -290,22 +293,22 @@ export default function DNSScreen() {
           {[undefined, ...RECORD_TYPES].map((rt) => {
             const active = filter === rt;
             return (
-              <TouchableOpacity
+              <M3Pressable
                 key={rt ?? 'all'}
+                radius={Radius.full}
+                scaleTo={0.95}
                 onPress={() => { setFilter(rt); setLoading(true); }}
                 style={[
                   styles.chip,
-                  {
-                    backgroundColor: active ? colors.primary : colors.surface,
-                    borderColor: active ? colors.primary : colors.borderLight,
-                  },
+                  active
+                    ? getTintedGlassStyle(colors, isDark, colors.primary + 'BD', 18)
+                    : getGlassStyle(colors, isDark, 'subtle', Radius.full),
                 ]}
-                activeOpacity={0.7}
               >
                 <Text style={[styles.chipText, { color: active ? '#FFF' : colors.textSecondary }]}>
                   {rt ?? t('dns.all')}
                 </Text>
-              </TouchableOpacity>
+              </M3Pressable>
             );
           })}
         </ScrollView>
@@ -317,7 +320,7 @@ export default function DNSScreen() {
               {filter ? ` · ${filter}` : ''}
               {usage ? ` · ${usage.record_usage}${usage.record_quota ? `/${usage.record_quota}` : ''}` : ''}
             </Text>
-            {busy && <ActivityIndicator size="small" color={colors.textTertiary} />}
+            {busy && <M3Spinner size="sm" color={colors.textTertiary} />}
           </View>
         )}
 
@@ -336,32 +339,47 @@ export default function DNSScreen() {
         />
 
         {/* Add record */}
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + Spacing.lg }]}
+        <M3Pressable
+          radius={Radius.full}
+          scaleTo={0.95}
+          style={[
+            styles.fab,
+            getTintedGlassStyle(colors, isDark, colors.primary + 'BD', 22),
+            { bottom: insets.bottom + Spacing.lg },
+          ]}
           onPress={() => router.push({ pathname: `/zone/[id]/dns-edit` as any, params: { id } })}
-          activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel={t('dns.add_record')}
         >
           <Icon name="plus" size={18} color="#FFF" />
           <Text style={styles.fabText}>{t('dns.add_record')}</Text>
-        </TouchableOpacity>
+        </M3Pressable>
 
         {/* More actions sheet */}
-        <Modal visible={showMenu} animationType="slide" transparent onRequestClose={() => setShowMenu(false)}>
-          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowMenu(false)}>
-            <View style={[styles.sheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + Spacing.lg }]}>
-              <View style={[styles.grabber, { backgroundColor: colors.border }]} />
-              <View style={[styles.sheetGroup, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+        <Modal visible={showMenu} animationType="fade" transparent onRequestClose={() => setShowMenu(false)}>
+          <TouchableOpacity
+            style={[styles.modalOverlay, { backgroundColor: colors.glassOverlay }, getBackdropBlurStyle(10)]}
+            activeOpacity={1}
+            onPress={() => setShowMenu(false)}
+          >
+            <View
+              style={[
+                styles.sheet,
+                getGlassStyle(colors, isDark, 'elevated'),
+                { borderBottomWidth: 0, paddingBottom: insets.bottom + Spacing.lg },
+              ]}
+            >
+              <View style={[styles.grabber, { backgroundColor: colors.onSurfaceVariant + '55' }]} />
+              <View style={[styles.sheetGroup, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
                 {menu.map((m, i) => (
                   <TouchableOpacity
                     key={m.label}
-                    style={[styles.sheetRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderLight }]}
+                    style={[styles.sheetRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.glassBorderSubtle }]}
                     onPress={() => { setShowMenu(false); m.onPress(); }}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.sheetIcon, { backgroundColor: colors.surfaceSecondary }]}>
-                      <Icon name={m.icon} size={16} color={colors.text} />
+                    <View style={[styles.sheetIcon, { backgroundColor: colors.secondaryContainer + '8F' }]}>
+                      <Icon name={m.icon} size={16} color={colors.onSecondaryContainer} />
                     </View>
                     <Text style={[styles.sheetLabel, { color: colors.text }]}>{m.label}</Text>
                     <Icon name="chevron-right" size={16} color={colors.textTertiary} />
@@ -373,9 +391,9 @@ export default function DNSScreen() {
         </Modal>
 
         {/* DNS Settings Modal */}
-        <Modal visible={showSettings} animationType="slide" transparent onRequestClose={() => setShowSettings(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+        <Modal visible={showSettings} animationType="fade" transparent onRequestClose={() => setShowSettings(false)}>
+          <View style={[styles.modalOverlay, { backgroundColor: colors.glassOverlay }, getBackdropBlurStyle(10)]}>
+            <View style={[styles.modalContent, getGlassStyle(colors, isDark, 'elevated'), { borderBottomWidth: 0 }]}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>{t('dns.settings_title')}</Text>
                 <TouchableOpacity onPress={() => setShowSettings(false)} hitSlop={8}>
@@ -545,27 +563,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 50,
-    paddingHorizontal: Spacing.xl,
+    height: 48,
+    paddingHorizontal: Spacing.lg + 2,
     borderRadius: Radius.full,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 3,
   },
   fabText: { color: '#FFF', fontSize: FontSize.md, fontWeight: '600' },
 
   // Sheets
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
   sheet: {
+    width: '100%',
+    maxWidth: 640,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
   },
   grabber: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg },
-  sheetGroup: { borderRadius: Radius.lg, borderWidth: 1, overflow: 'hidden' },
+  sheetGroup: { borderRadius: Radius.lg, overflow: 'hidden' },
   sheetRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -576,6 +596,8 @@ const styles = StyleSheet.create({
   sheetIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   sheetLabel: { flex: 1, fontSize: FontSize.md, fontWeight: '500' },
   modalContent: {
+    width: '100%',
+    maxWidth: 640,
     maxHeight: '85%',
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,

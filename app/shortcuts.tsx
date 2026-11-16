@@ -84,7 +84,7 @@ export default function ShortcutsScreen() {
       {!!error && <Banner message={error} />}
       <SearchBar value={search} onChangeText={setSearch} placeholder={t('shortcuts.search')} style={styles.search} />
       {zones === null ? (
-        <Loading />
+        <Loading fullScreen={false} />
       ) : (
         <Group>
           {zones.map((z) => (

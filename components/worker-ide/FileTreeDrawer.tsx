@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
 import {
   buildFileTree,
@@ -52,7 +53,7 @@ export function FileTreeDrawer({
   showClose = false,
 }: FileTreeDrawerProps) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const [filter, setFilter] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -88,7 +89,7 @@ export function FileTreeDrawer({
             style={[
               styles.nodeRow,
               { paddingLeft: indent },
-              isTarget && { backgroundColor: colors.surfaceSecondary },
+              isTarget && { backgroundColor: colors.glassSurfaceSubtle },
             ]}
           >
             <TouchableOpacity
@@ -152,7 +153,7 @@ export function FileTreeDrawer({
             style={[
               styles.extBadge,
               {
-                backgroundColor: isActive ? colors.primaryContainer : colors.surfaceContainerHigh,
+                backgroundColor: isActive ? colors.primaryContainer : colors.glassSurfaceSubtle,
                 borderColor: 'transparent',
               },
             ]}
@@ -201,15 +202,15 @@ export function FileTreeDrawer({
   };
 
   return (
-    <View style={[styles.drawer, { backgroundColor: colors.surfaceContainerLow, borderRightColor: colors.outlineVariant + '55' }]}>
+    <View style={[styles.drawer, getGlassStyle(colors, isDark, 'elevated'), { borderWidth: 0, borderRightWidth: 1, borderRightColor: colors.glassBorderSubtle }]}>
       {/* Top IDE Drawer Action Bar */}
-      <View style={[styles.toolbar, { borderBottomColor: colors.outlineVariant + '55' }]}>
+      <View style={[styles.toolbar, { borderBottomColor: colors.glassBorderSubtle }]}>
         <TouchableOpacity
           onPress={() => {
             setSearchOpen((v) => !v);
             if (searchOpen) setFilter('');
           }}
-          style={[styles.toolBtn, searchOpen && { backgroundColor: colors.surfaceSecondary }]}
+          style={[styles.toolBtn, searchOpen && { backgroundColor: colors.glassSurfaceSubtle }]}
           accessibilityRole="button"
           accessibilityLabel={t('common.search')}
         >
@@ -254,7 +255,7 @@ export function FileTreeDrawer({
 
       {/* Project root header */}
       <TouchableOpacity
-        style={[styles.projectHeader, { borderBottomColor: colors.borderLight }]}
+        style={[styles.projectHeader, { borderBottomColor: colors.glassBorderSubtle }]}
         onPress={() => onSelectFolder('')}
         activeOpacity={0.75}
       >
@@ -268,7 +269,7 @@ export function FileTreeDrawer({
       </TouchableOpacity>
 
       {searchOpen && (
-        <View style={[styles.filterBox, { borderBottomColor: colors.borderLight }]}>
+        <View style={[styles.filterBox, { borderBottomColor: colors.glassBorderSubtle }]}>
           <TextInput
             value={filter}
             onChangeText={setFilter}
@@ -280,8 +281,8 @@ export function FileTreeDrawer({
               styles.filterInput,
               {
                 color: colors.text,
-                backgroundColor: colors.surfaceSecondary,
-                borderColor: colors.borderLight,
+                backgroundColor: colors.glassSurfaceSubtle,
+                borderColor: colors.glassBorderSubtle,
               },
             ]}
           />
@@ -304,9 +305,9 @@ export function FileTreeDrawer({
       </ScrollView>
 
       {/* Bottom quick-create footer */}
-      <View style={[styles.drawerFooter, { borderTopColor: colors.borderLight }]}>
+      <View style={[styles.drawerFooter, { borderTopColor: colors.glassBorderSubtle }]}>
         <TouchableOpacity
-          style={[styles.footerBtn, { backgroundColor: colors.surfaceSecondary }]}
+          style={[styles.footerBtn, getGlassStyle(colors, isDark, 'subtle', Radius.sm)]}
           onPress={() => onNewFile(selectedFolder || undefined)}
           activeOpacity={0.75}
         >
@@ -316,7 +317,7 @@ export function FileTreeDrawer({
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.footerBtn, { backgroundColor: colors.surfaceSecondary }]}
+          style={[styles.footerBtn, getGlassStyle(colors, isDark, 'subtle', Radius.sm)]}
           onPress={() => onUploadFiles(selectedFolder || undefined)}
           activeOpacity={0.75}
         >

@@ -9,10 +9,12 @@ import {
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Icon } from '@/components/ui/icon';
 import { SearchBar } from '@/components/ui/kit';
 import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
-import { SkeletonRows } from '@/components/ui/skeleton';
+import { M3LinearProgress } from '@/components/ui/loading';
+import { SkeletonChips, SkeletonRows } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
 import * as api from '@/services/cloudflare';
@@ -26,7 +28,7 @@ const maskName = (name: string) => {
 
 export default function ZonesScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,11 +88,20 @@ export default function ZonesScreen() {
         <M3Pressable
           radius={Radius.lg}
           onPress={() => router.push(`/zone/${item.id}`)}
-          style={[styles.zoneCard, { backgroundColor: colors.surfaceContainerLow }]}
+          style={[styles.zoneCard, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
           accessibilityRole="button"
           accessibilityLabel={item.name}
         >
-          <View style={[styles.zoneIconWrap, { backgroundColor: iconBg }]}>
+          <View
+            style={[
+              styles.zoneIconWrap,
+              {
+                backgroundColor: iconBg + 'D8',
+                borderWidth: 1,
+                borderColor: colors.glassBorderSubtle,
+              },
+            ]}
+          >
             <Icon name="globe" size={20} color={iconInk} />
           </View>
 
@@ -129,7 +140,9 @@ export default function ZonesScreen() {
   if (loading && zones.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.inner, { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm }]}>
+        <M3LinearProgress height={3} />
+        <View style={[styles.inner, { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, gap: Spacing.md }]}>
+          <SkeletonChips count={3} />
           <SkeletonRows count={7} />
         </View>
       </View>
@@ -187,7 +200,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxxl,
+    paddingBottom: 108,
   },
   zoneCard: {
     flexDirection: 'row',

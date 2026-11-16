@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   StyleSheet, View, Text, ScrollView, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl, Alert,
+  RefreshControl, Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -198,7 +198,7 @@ export default function D1BrowserScreen() {
             </View>
 
             {rowsLoading ? (
-              <ActivityIndicator style={styles.spinner} color={colors.primary} />
+              <Loading fullScreen={false} />
             ) : rows.length === 0 ? (
               <EmptyState icon="database" title={t('d1.empty_table')} message={t('d1.empty_table_message')} />
             ) : (

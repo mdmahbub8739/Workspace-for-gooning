@@ -102,8 +102,10 @@ function createClient(config: AuthConfig): AxiosInstance {
     if (Platform.OS === 'web' && typeof FormData !== 'undefined' && req.data instanceof FormData) {
       if (typeof (req.headers as any).delete === 'function') {
         (req.headers as any).delete('Content-Type');
+        (req.headers as any).delete('content-type');
       } else {
         delete (req.headers as any)['Content-Type'];
+        delete (req.headers as any)['content-type'];
       }
     }
     // Last step before the wire: wait for a free slot and for any 429 cooldown.
@@ -1078,6 +1080,13 @@ export async function updateWorkerContent(accountId: string, scriptName: string,
 }): Promise<void> {
   const type = part.moduleSyntax ? 'application/javascript+module' : 'application/javascript';
   const metadata = part.moduleSyntax ? { main_module: part.fileName } : { body_part: part.fileName };
+  if (Platform.OS === 'web') {
+    const { form } = await buildWorkerMultipartForm(metadata, [
+      { name: part.fileName, fileUri: part.fileUri, contentType: type },
+    ]);
+    await getClient().put(`/accounts/${accountId}/workers/scripts/${scriptName}/content`, form);
+    return;
+  }
   const form = new FormData();
   form.append('metadata', JSON.stringify(metadata));
   form.append(part.fileName, { uri: part.fileUri, name: part.fileName, type } as any);
@@ -1100,10 +1109,10 @@ async function buildWorkerMultipartForm(
   modules: WorkerModuleUploadPart[]
 ): Promise<{ form: FormData; cleanup: () => Promise<void> }> {
   const form = new FormData();
-  form.append('metadata', JSON.stringify(metadata));
   const tempUris: string[] = [];
 
   if (Platform.OS === 'web') {
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
     for (const mod of modules) {
       let blob: Blob;
       if (mod.fileUri) {
@@ -1117,6 +1126,8 @@ async function buildWorkerMultipartForm(
     }
     return { form, cleanup: async () => {} };
   }
+
+  form.append('metadata', JSON.stringify(metadata));
 
   const FileSystem = require('expo-file-system/legacy');
   for (let i = 0; i < modules.length; i++) {
@@ -1162,7 +1173,7 @@ export async function updateWorkerModules(
     const res = await getClient().put<CFResponse<WorkerScript>>(
       `/accounts/${accountId}/workers/scripts/${scriptName}/content`,
       form,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
+      Platform.OS === 'web' ? undefined : { headers: { 'Content-Type': 'multipart/form-data' } }
     );
     return res.data;
   } finally {
@@ -1196,7 +1207,7 @@ export async function createWorkerScript(
     const res = await getClient().put<CFResponse<WorkerScript>>(
       `/accounts/${accountId}/workers/scripts/${scriptName}`,
       form,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
+      Platform.OS === 'web' ? undefined : { headers: { 'Content-Type': 'multipart/form-data' } }
     );
     return res.data;
   } finally {

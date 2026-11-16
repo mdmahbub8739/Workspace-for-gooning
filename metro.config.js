@@ -30,6 +30,32 @@ const PROXY_ROUTES = [
   { prefix: '/__cf_oauth', target: 'https://dash.cloudflare.com/oauth2' },
 ];
 
+const STRIP_PROXY_HEADERS = new Set([
+  'host',
+  'origin',
+  'referer',
+  'connection',
+  'keep-alive',
+  'proxy-connection',
+  'te',
+  'trailer',
+  'upgrade',
+  'accept-encoding',
+  'cookie',
+  'expect',
+  'x-forwarded-for',
+  'x-forwarded-host',
+  'x-forwarded-proto',
+  'x-forwarded-port',
+  'x-real-ip',
+  'forwarded',
+  'via',
+  'x-cloud-trace-context',
+  'traceparent',
+  'tracestate',
+  'cdn-loop',
+]);
+
 function proxyToCloudflare(req, res, route) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
@@ -44,13 +70,14 @@ function proxyToCloudflare(req, res, route) {
 
   const suffix = req.url.slice(route.prefix.length) || '/';
   const targetUrl = new URL(route.target + (suffix.startsWith('/') ? suffix : '/' + suffix));
-  const headers = { ...req.headers };
-  delete headers.host;
-  delete headers.origin;
-  delete headers.referer;
-  delete headers.connection;
-  delete headers['accept-encoding'];
-  delete headers.cookie;
+  const headers = {};
+  for (const [key, val] of Object.entries(req.headers)) {
+    const lower = key.toLowerCase();
+    if (STRIP_PROXY_HEADERS.has(lower) || lower.startsWith('cf-') || lower.startsWith('sec-')) {
+      continue;
+    }
+    if (val !== undefined) headers[lower] = val;
+  }
   headers.host = targetUrl.host;
 
   const proxyReq = https.request(
@@ -78,7 +105,7 @@ function proxyToCloudflare(req, res, route) {
 
   proxyReq.on('error', (err) => {
     if (!res.headersSent) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
           success: false,
@@ -92,6 +119,7 @@ function proxyToCloudflare(req, res, route) {
     }
   });
 
+  req.on('error', () => proxyReq.destroy());
   req.on('aborted', () => proxyReq.destroy());
   req.pipe(proxyReq);
 }

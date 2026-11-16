@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/icon';
 import { useTheme, ThemeColors } from '@/hooks/use-theme';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loading } from '@/components/ui/loading';
+import { Loading, M3LinearProgress, M3Spinner } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Sheet } from '@/components/ui/sheet';
 import { LineChart } from '@/components/ui/chart';
@@ -217,7 +217,7 @@ export default function ObservatoryScreen() {
         <Card style={styles.pageCard}>
           <View style={styles.pageHeader}>
             {r?.state === 'RUNNING'
-              ? <View style={styles.spinner}><ActivityIndicator color={colors.primary} /></View>
+              ? <View style={styles.spinner}><M3Spinner size="md" color={colors.primary} /></View>
               : <Score value={r?.performanceScore} />}
             <View style={styles.pageBody}>
               <Text style={[styles.pageUrl, { color: colors.text }]} numberOfLines={1}>{item.url}</Text>
@@ -325,7 +325,7 @@ export default function ObservatoryScreen() {
             )}
 
             <FieldLabel>{t('obs.trend')}</FieldLabel>
-            {trend === null ? <ActivityIndicator color={colors.primary} /> : trend.length > 1 ? (
+            {trend === null ? <M3LinearProgress height={4} style={{ marginVertical: Spacing.md }} /> : trend.length > 1 ? (
               <LineChart series={[{ label: t('obs.score'), color: colors.primary, data: trend }]} height={150} formatValue={(n) => String(Math.round(n))} />
             ) : (
               <Text style={[styles.note, { color: colors.textSecondary }]}>{t('obs.trend_empty')}</Text>
@@ -344,7 +344,7 @@ export default function ObservatoryScreen() {
             />
 
             <FieldLabel>{t('obs.history')}</FieldLabel>
-            {history === null ? <ActivityIndicator color={colors.primary} /> : history.length === 0 ? (
+            {history === null ? <M3Spinner size="md" color={colors.primary} style={{ alignSelf: 'center', marginVertical: Spacing.md }} /> : history.length === 0 ? (
               <Text style={[styles.note, { color: colors.textSecondary }]}>{t('obs.no_tests')}</Text>
             ) : (
               history.map((h) => {

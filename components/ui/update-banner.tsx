@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native
 import { useTranslation } from 'react-i18next';
 import { Icon } from './icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getTintedGlassStyle } from '@/components/ui/glass';
 import { Spacing, FontSize, Radius } from '@/constants/theme';
 import { CURRENT_VERSION } from '@/services/version-check';
 import { hasPlayUpdate, startPlayUpdate } from '@/services/play-update';
@@ -24,7 +25,7 @@ const storage = {
 
 export function UpdateBanner() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [available, setAvailable] = useState(false);
 
   useEffect(() => {
@@ -47,8 +48,8 @@ export function UpdateBanner() {
   const update = () => { startPlayUpdate(); };
 
   return (
-    <View style={[styles.banner, { backgroundColor: colors.primary }]}>
-      <View style={[styles.iconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+    <View style={[styles.banner, getTintedGlassStyle(colors, isDark, colors.primary + 'B8', 22)]}>
+      <View style={[styles.iconWrap, { backgroundColor: 'rgba(255,255,255,0.22)' }]}>
         <Icon name="download" size={18} color="#FFF" />
       </View>
       <View style={{ flex: 1 }}>
@@ -58,10 +59,10 @@ export function UpdateBanner() {
         </Text>
       </View>
       <TouchableOpacity onPress={update} style={styles.actionBtn} activeOpacity={0.8}>
-        <Text style={styles.actionText}>{t('update.update_now')}</Text>
+        <Text style={[styles.actionText, { color: colors.primary }]}>{t('update.update_now')}</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={dismiss} hitSlop={8} style={{ padding: 4 }}>
-        <Icon name="close" size={18} color="rgba(255,255,255,0.7)" />
+        <Icon name="close" size={18} color="rgba(255,255,255,0.8)" />
       </TouchableOpacity>
     </View>
   );
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   actionBtn: {
-    backgroundColor: '#FFF',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     paddingHorizontal: Spacing.md,
     paddingVertical: 8,
     borderRadius: Radius.full,

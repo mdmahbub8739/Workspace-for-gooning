@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  StyleSheet, View, Text, TextInput, SectionList, TouchableOpacity, ActivityIndicator,
+  StyleSheet, View, Text, TextInput, SectionList, TouchableOpacity,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconName } from '@/components/ui/icon';
 import { EmptyState } from '@/components/ui/empty-state';
+import { getGlassStyle } from '@/components/ui/glass';
+import { M3Spinner } from '@/components/ui/loading';
+import { M3Pressable } from '@/components/ui/m3-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/contexts/auth';
 import { Spacing, FontSize, Radius } from '@/constants/theme';
@@ -31,7 +34,7 @@ const MIN_QUERY = 2;
 
 export default function SearchScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
 
   const [query, setQuery] = useState('');
@@ -151,7 +154,7 @@ export default function SearchScreen() {
     <>
       <Stack.Screen options={{ title: t('search.title') }} />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+        <View style={[styles.searchBar, getGlassStyle(colors, isDark, 'elevated', Radius.full)]}>
           <Icon name="search" size={18} color={colors.textTertiary} />
           <TextInput
             style={[styles.input, { color: colors.text }]}
@@ -165,7 +168,7 @@ export default function SearchScreen() {
             returnKeyType="search"
           />
           {loading ? (
-            <ActivityIndicator size="small" color={colors.textTertiary} />
+            <M3Spinner size="sm" color={colors.textTertiary} />
           ) : query.length > 0 ? (
             <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} accessibilityLabel={t('common.cancel')}>
               <Icon name="close" size={16} color={colors.textTertiary} />
@@ -183,12 +186,13 @@ export default function SearchScreen() {
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{section.title}</Text>
           )}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+            <M3Pressable
+              radius={Radius.lg}
+              scaleTo={0.985}
+              style={[styles.row, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
               onPress={item.onPress}
-              activeOpacity={0.7}
             >
-              <View style={[styles.rowIcon, { backgroundColor: colors.surfaceSecondary }]}>
+              <View style={[styles.rowIcon, getGlassStyle(colors, isDark, 'subtle', 17)]}>
                 <Icon name={item.icon} size={16} color={colors.text} />
               </View>
               <View style={{ flex: 1 }}>
@@ -196,7 +200,7 @@ export default function SearchScreen() {
                 <Text style={[styles.rowSub, { color: colors.textTertiary }]} numberOfLines={1}>{item.subtitle}</Text>
               </View>
               <Icon name="chevron-right" size={16} color={colors.textTertiary} />
-            </TouchableOpacity>
+            </M3Pressable>
           )}
           ListEmptyComponent={
             q.length < MIN_QUERY ? (

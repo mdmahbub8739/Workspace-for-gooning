@@ -1,12 +1,11 @@
 import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
-import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useTheme } from '@/hooks/use-theme';
 
 const CLOUD = 'M340 700 H700 A120 120 0 0 0 730 462 A170 170 0 0 0 420 410 A150 150 0 0 0 340 700 Z';
 
 /**
- * Material You expressive organic tonal canvas backdrop.
- * Uses subtle layered tonal circles derived from the active dynamic seed palette.
+ * Atmospheric radial-gradient canvas backdrop for hero headers and onboarding.
  */
 export function BrandGradient({ style }: { style?: StyleProp<ViewStyle> }) {
   const { colors } = useTheme();
@@ -16,9 +15,23 @@ export function BrandGradient({ style }: { style?: StyleProp<ViewStyle> }) {
       pointerEvents="none"
     >
       <Svg width="100%" height="100%" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid slice">
-        <Circle cx="330" cy="40" r="160" fill={colors.tertiaryContainer} opacity={0.65} />
-        <Circle cx="65" cy="250" r="145" fill={colors.secondaryContainer} opacity={0.85} />
-        <Circle cx="215" cy="175" r="110" fill={colors.primary} opacity={0.14} />
+        <Defs>
+          <RadialGradient id="bgOrb1" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor={colors.tertiaryContainer} stopOpacity={0.9} />
+            <Stop offset="100%" stopColor={colors.tertiaryContainer} stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id="bgOrb2" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor={colors.secondaryContainer} stopOpacity={0.95} />
+            <Stop offset="100%" stopColor={colors.secondaryContainer} stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id="bgOrb3" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor={colors.primary} stopOpacity={0.28} />
+            <Stop offset="100%" stopColor={colors.primary} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx="330" cy="45" r="180" fill="url(#bgOrb1)" />
+        <Circle cx="65" cy="245" r="175" fill="url(#bgOrb2)" />
+        <Circle cx="210" cy="160" r="145" fill="url(#bgOrb3)" />
       </Svg>
     </View>
   );

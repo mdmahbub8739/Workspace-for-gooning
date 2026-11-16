@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/auth';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SkeletonHeading, SkeletonRows, SkeletonStats } from '@/components/ui/skeleton';
+import { SkeletonHeading, SkeletonHero, SkeletonRows, SkeletonStats } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
 import { ProportionBar } from '@/components/ui/mini-chart';
@@ -41,7 +42,7 @@ const PREVIEW = 5;
 
 export default function ServicesScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId, permissions } = useAuth();
   const perms = permissions ?? ({ workers: true, kv: true, r2: true, pages: true, d1: true } as any);
 
@@ -132,7 +133,7 @@ export default function ServicesScreen() {
         accessibilityLabel={t('common.loading')}
       >
         <View style={styles.inner}>
-          <SkeletonRows count={1} />
+          <SkeletonHero />
           <View style={{ height: Spacing.md }} />
           <SkeletonStats count={2} />
           <SkeletonHeading />
@@ -177,7 +178,7 @@ export default function ServicesScreen() {
   const serviceTile = (icon: IconName, title: string, count: number, error?: string) => (
     <View
       key={title}
-      style={[styles.tile, { backgroundColor: colors.surfaceContainer }]}
+      style={[styles.tile, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
     >
       <IconCircle name={icon} size={38} tone={error ? 'error' : 'primary'} />
       <View style={styles.tileBody}>
@@ -396,6 +397,7 @@ export default function ServicesScreen() {
           return (
             <M3Entrance key={section.key} index={4 + idx}>
               <SectionHeader
+                icon={section.emptyIcon}
                 title={section.title}
                 action={
                   section.key === 'workers' ? (
@@ -403,7 +405,10 @@ export default function ServicesScreen() {
                       radius={Radius.full}
                       onPress={() => setShowCreateWorker(true)}
                       hitSlop={8}
-                      style={[styles.createWorkerBtn, { backgroundColor: colors.primaryContainer }]}
+                      style={[
+                        styles.createWorkerBtn,
+                        getTintedGlassStyle(colors, isDark, colors.primaryContainer + '8F', 16),
+                      ]}
                       accessibilityRole="button"
                       accessibilityLabel={t('services.new_worker')}
                     >
@@ -463,7 +468,7 @@ export default function ServicesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl },
+  content: { padding: Spacing.lg, paddingBottom: 108 },
   inner: { width: '100%', maxWidth: 960, alignSelf: 'center' },
 
   overviewCard: { gap: Spacing.md, marginTop: Spacing.sm },

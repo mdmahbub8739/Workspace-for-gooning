@@ -1,20 +1,20 @@
 import { Stack } from 'expo-router';
-import { useThemeContext } from '@/contexts/theme';
-import { Colors } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { GlassHeaderBackdrop } from '@/components/ui/glass';
 
 export default function ZoneLayout() {
-  // Follow the in-app theme choice, not just the system scheme.
-  const { resolved: colorScheme } = useThemeContext();
+  const { colors } = useTheme();
 
   return (
     <Stack
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: Colors[colorScheme].background },
-        headerTintColor: Colors[colorScheme].text,
+        headerStyle: { backgroundColor: 'transparent' },
+        headerBackground: () => <GlassHeaderBackdrop />,
+        headerTintColor: colors.onSurface,
         headerTitleStyle: { fontSize: 18, fontWeight: '500' },
         headerShadowVisible: false,
-        contentStyle: { backgroundColor: Colors[colorScheme].background },
+        contentStyle: { backgroundColor: 'transparent' },
         animation: 'slide_from_right',
       }}
     >

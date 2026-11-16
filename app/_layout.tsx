@@ -8,8 +8,9 @@ import { useEffect, useMemo } from 'react';
 import { AuthProvider } from '@/contexts/auth';
 import { ThemeProvider, useThemeContext } from '@/contexts/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { LockGate } from '@/components/ui/lock-gate';
+import { AmbientGlassBackdrop, GlassHeaderBackdrop } from '@/components/ui/glass';
 import { applyScreenshotBlock } from '@/services/app-lock';
 import { refreshShortcuts } from '@/widgets/sync';
 import { initPremium } from '@/services/premium';
@@ -31,6 +32,27 @@ function AppContent() {
   const { resolved } = useThemeContext();
   const { colors } = useTheme();
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    if (document.getElementById('cf-glass-web-css')) return;
+    const style = document.createElement('style');
+    style.id = 'cf-glass-web-css';
+    style.textContent = `
+      html, body, #root {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(128, 128, 140, 0.28);
+        border-radius: 999px;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 140, 0.45); }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
   const navTheme = useMemo(() => {
     const base = resolved === 'dark' ? DarkTheme : DefaultTheme;
     return {
@@ -38,10 +60,10 @@ function AppContent() {
       colors: {
         ...base.colors,
         primary: colors.primary,
-        background: colors.background,
-        card: colors.background,
+        background: 'transparent',
+        card: 'transparent',
         text: colors.onSurface,
-        border: colors.outlineVariant,
+        border: colors.glassBorderSubtle,
         notification: colors.primary,
       },
     };
@@ -49,18 +71,21 @@ function AppContent() {
 
   return (
     <NavThemeProvider value={navTheme}>
-      <LockGate>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: colors.background },
-            headerTintColor: colors.onSurface,
-            headerTitleStyle: { fontSize: 20, fontWeight: '600' },
-            contentStyle: { backgroundColor: colors.background },
-            animation: 'fade_from_bottom',
-          }}
-        >
+      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+        <AmbientGlassBackdrop />
+        <LockGate>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              headerShadowVisible: false,
+              headerStyle: { backgroundColor: 'transparent' },
+              headerBackground: () => <GlassHeaderBackdrop />,
+              headerTintColor: colors.onSurface,
+              headerTitleStyle: { fontSize: 20, fontWeight: '600' },
+              contentStyle: { backgroundColor: 'transparent' },
+              animation: 'fade_from_bottom',
+            }}
+          >
           <Stack.Screen name="search" options={{ animation: 'fade', headerShown: true }} />
           <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
           <Stack.Screen name="login" options={{ animation: 'fade' }} />
@@ -127,8 +152,9 @@ function AppContent() {
           <Stack.Screen name="worker/[script]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
           <Stack.Screen name="worker-ide/[script]" options={{ animation: 'fade_from_bottom', headerShown: false }} />
           <Stack.Screen name="worker-tail/[script]" options={{ animation: 'fade_from_bottom', headerShown: true }} />
-        </Stack>
-      </LockGate>
+          </Stack>
+        </LockGate>
+      </View>
       <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />
     </NavThemeProvider>
   );

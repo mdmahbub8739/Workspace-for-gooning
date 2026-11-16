@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
+import { M3Pressable } from '@/components/ui/m3-motion';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
@@ -24,7 +26,7 @@ const FILTER_TYPES = ['dns', 'http', 'l4', 'egress'];
 
 export default function GatewayRulesScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { accountId } = useAuth();
   const premium = useUnlocked('gateway-rules');
@@ -171,11 +173,12 @@ export default function GatewayRulesScreen() {
           ) : (
             rules.map((rule) => (
               // The whole card opens the editor; the switch and the trash icon act on their own.
-              <TouchableOpacity
+              <M3Pressable
                 key={rule.id}
-                activeOpacity={0.7}
+                radius={Radius.lg}
+                scaleTo={0.985}
                 onPress={() => openEdit(rule)}
-                style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+                style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
               >
                 <ListRow
                   icon="shield"
@@ -203,7 +206,7 @@ export default function GatewayRulesScreen() {
                   <Badge label={rule.action} />
                   {!!rule.filters?.[0] && <Badge label={rule.filters[0]} variant="default" />}
                 </View>
-              </TouchableOpacity>
+              </M3Pressable>
             ))
           )}
         </ScrollView>

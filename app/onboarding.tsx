@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Button } from '@/components/ui/button';
 import { BrandGradient, BrandMark } from '@/components/ui/brand';
 import { M3_EMPHASIZED, M3_EXPRESSIVE_SPRING, M3Pressable } from '@/components/ui/m3-motion';
@@ -151,7 +152,7 @@ export default function OnboardingScreen() {
             onPress={skip}
             radius={Radius.full}
             stateLayerColor={colors.onPrimaryContainer}
-            style={[styles.skipBtn, { backgroundColor: colors.surfaceContainerLowest + 'B8' }]}
+            style={[styles.skipBtn, getGlassStyle(colors, isDark, 'surface', Radius.full)]}
             hitSlop={8}
             accessibilityRole="button"
           >
@@ -182,7 +183,13 @@ export default function OnboardingScreen() {
       <View
         style={[
           styles.sheetWrap,
-          { backgroundColor: colors.surfaceContainerLow, paddingBottom: insets.bottom + Spacing.xl },
+          getGlassStyle(colors, isDark, 'elevated'),
+          {
+            borderBottomWidth: 0,
+            borderBottomLeftRadius: 0,
+            borderBottomRightRadius: 0,
+            paddingBottom: insets.bottom + Spacing.xl,
+          },
         ]}
       >
         <View style={styles.sheetInner}>

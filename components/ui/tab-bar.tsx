@@ -1,13 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/use-theme';
-import { M3_EXPRESSIVE_SPRING, M3_SPRING } from '@/components/ui/m3-motion';
-import { FontSize } from '@/constants/theme';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
+import { M3_EXPRESSIVE_SPRING, M3_SPRING, isReducedMotionEnabled } from '@/components/ui/m3-motion';
+import { FontSize, Radius, Spacing } from '@/constants/theme';
 
-function M3NavItem({
+function GlassTabItem({
   label,
   focused,
   isFeatured,
@@ -22,36 +23,36 @@ function M3NavItem({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const focusProgress = useSharedValue(focused ? 1 : 0);
   const pressScale = useSharedValue(1);
 
   useEffect(() => {
+    if (isReducedMotionEnabled()) {
+      focusProgress.value = focused ? 1 : 0;
+      return;
+    }
     focusProgress.value = withSpring(focused ? 1 : 0, M3_EXPRESSIVE_SPRING);
   }, [focused, focusProgress]);
 
-  const indicatorStyle = useAnimatedStyle(() => ({
-    opacity: focusProgress.value,
-    transform: [{ scaleX: 0.45 + focusProgress.value * 0.55 }, { scaleY: 0.8 + focusProgress.value * 0.2 }],
-  }));
-
   const iconStyle = useAnimatedStyle(() => ({
     transform: [
-      { scale: (focused ? 1.06 : 1) * pressScale.value },
-      { translateY: focusProgress.value * -0.5 },
+      { scale: (1 + focusProgress.value * 0.06) * pressScale.value },
+      { translateY: focusProgress.value * -1 },
     ],
   }));
 
-  const activePillBg = isFeatured ? colors.primaryContainer : colors.secondaryContainer;
-  const activeIconColor = isFeatured ? colors.onPrimaryContainer : colors.onSecondaryContainer;
-  const activeLabelColor = isFeatured ? colors.primary : colors.onSurface;
+  const activeIconColor = isFeatured
+    ? (isDark ? colors.primaryLight : colors.primary)
+    : colors.onSecondaryContainer;
+  const activeLabelColor = colors.onSurface;
 
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
       onPressIn={() => {
-        pressScale.value = withSpring(0.92, M3_SPRING);
+        if (!isReducedMotionEnabled()) pressScale.value = withSpring(0.92, M3_SPRING);
       }}
       onPressOut={() => {
         pressScale.value = withSpring(1, M3_SPRING);
@@ -62,23 +63,13 @@ function M3NavItem({
       style={styles.item}
       hitSlop={4}
     >
-      <View style={styles.pillSlot}>
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.activePill,
-            { backgroundColor: activePillBg },
-            indicatorStyle,
-          ]}
-        />
-        <Animated.View style={iconStyle}>
-          {renderIcon?.({
-            focused,
-            color: focused ? activeIconColor : colors.onSurfaceVariant,
-            size: 22,
-          })}
-        </Animated.View>
-      </View>
+      <Animated.View style={iconStyle}>
+        {renderIcon?.({
+          focused,
+          color: focused ? activeIconColor : colors.onSurfaceVariant,
+          size: 20,
+        })}
+      </Animated.View>
       <Text
         numberOfLines={1}
         style={[
@@ -96,26 +87,70 @@ function M3NavItem({
 }
 
 /**
- * Material Design 3 Navigation Bar:
- * Edge-to-edge tonal `surfaceContainer` bar with animated active indicator pills
- * and concise single-line labels.
+ * Floating Frosted Glass Navigation Dock:
+ * Detached pill dock with web backdrop blur, specular rim, and a fluid
+ * spring-animated sliding glass capsule behind the active tab.
  */
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const [innerWidth, setInnerWidth] = useState(0);
+
+  const count = Math.max(1, state.routes.length);
+  const padH = 6;
+  const slotWidth = Math.max(0, (innerWidth - padH * 2) / count);
+  const activeRoute = state.routes[state.index];
+  const activeIsFeatured = activeRoute?.name === 'ai-chat';
+
+  const slideX = useSharedValue(state.index * slotWidth);
+
+  useEffect(() => {
+    const target = state.index * slotWidth;
+    if (isReducedMotionEnabled() || slotWidth === 0) {
+      slideX.value = target;
+    } else {
+      slideX.value = withSpring(target, M3_EXPRESSIVE_SPRING);
+    }
+  }, [state.index, slotWidth, slideX]);
+
+  const activeCapsuleStyle = useAnimatedStyle(() => ({
+    width: Math.max(0, slotWidth - 4),
+    transform: [{ translateX: slideX.value + 2 }],
+  }));
+
+  const capsuleTint = activeIsFeatured
+    ? (isDark ? colors.primary + '38' : colors.primaryContainer + 'CC')
+    : (isDark ? colors.primary + '2E' : colors.secondaryContainer + 'CC');
 
   return (
     <View
+      pointerEvents="box-none"
       style={[
-        styles.wrap,
+        styles.outer,
         {
-          backgroundColor: colors.surfaceContainer,
-          borderTopColor: colors.outlineVariant + '55',
           paddingBottom: Math.max(insets.bottom, 10),
         },
       ]}
     >
-      <View style={styles.inner}>
+      <View
+        onLayout={(e) => setInnerWidth(e.nativeEvent.layout.width)}
+        style={[
+          styles.dock,
+          getGlassStyle(colors, isDark, 'elevated', Radius.xl),
+        ]}
+      >
+        {slotWidth > 0 && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.slidingCapsule,
+              getTintedGlassStyle(colors, isDark, capsuleTint, 12),
+              { borderColor: activeIsFeatured ? colors.primary + '55' : colors.glassBorder },
+              activeCapsuleStyle,
+            ]}
+          />
+        )}
+
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const focused = state.index === index;
@@ -133,7 +168,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
           };
 
           return (
-            <M3NavItem
+            <GlassTabItem
               key={route.key}
               label={label}
               focused={focused}
@@ -150,38 +185,44 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 10,
+  outer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: 6,
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
-  inner: {
+  dock: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
     width: '100%',
-    maxWidth: 720,
-    paddingHorizontal: 8,
+    maxWidth: 520,
+    height: 58,
+    paddingHorizontal: 5,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+  },
+  slidingCapsule: {
+    position: 'absolute',
+    left: 5,
+    top: 5,
+    bottom: 5,
+    borderRadius: Radius.full,
   },
   item: {
     flex: 1,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 54,
-    gap: 4,
-  },
-  pillSlot: {
-    width: 64,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activePill: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 16,
+    gap: 3,
+    zIndex: 1,
   },
   label: {
     fontSize: FontSize.xs,
-    letterSpacing: 0.2,
+    letterSpacing: 0.15,
   },
 });

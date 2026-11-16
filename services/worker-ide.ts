@@ -254,7 +254,7 @@ export function buildFileTree(filePaths: string[], explicitFolders: string[] = [
 }
 
 export function defaultCompatibilityDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10);
 }
 
 export const WORKER_TEMPLATES: WorkerTemplate[] = [

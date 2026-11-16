@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
 import { M3Pressable } from '@/components/ui/m3-motion';
+import { getGlassStyle } from '@/components/ui/glass';
 
 interface HeaderButtonProps {
   icon: IconName;
@@ -9,9 +10,9 @@ interface HeaderButtonProps {
   onPress: () => void;
 }
 
-/** Material Design 3 tonal filled IconButton for screen headers. */
+/** Frosted glass circular icon button for screen headers. */
 export function HeaderButton({ icon, label, onPress }: HeaderButtonProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <M3Pressable
@@ -21,7 +22,7 @@ export function HeaderButton({ icon, label, onPress }: HeaderButtonProps) {
       hitSlop={6}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[styles.button, { backgroundColor: colors.surfaceContainerHigh }]}
+      style={[styles.button, getGlassStyle(colors, isDark, 'subtle', 20)]}
     >
       <Icon name={icon} size={19} color={colors.onSurface} />
     </M3Pressable>

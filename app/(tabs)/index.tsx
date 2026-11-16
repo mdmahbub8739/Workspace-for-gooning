@@ -13,12 +13,13 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/auth';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Group, IconCircle, ListRow } from '@/components/ui/kit';
 import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
 import { Sheet } from '@/components/ui/sheet';
-import { SkeletonHeading, SkeletonRows, SkeletonStats, SkeletonTiles } from '@/components/ui/skeleton';
+import { SkeletonHeading, SkeletonHero, SkeletonRows, SkeletonStats, SkeletonTiles } from '@/components/ui/skeleton';
 import { UpdateBanner } from '@/components/ui/update-banner';
 import { AdBanner } from '@/components/ui/ad-banner';
 import { DiceBearAvatar } from '@/components/ui/dicebear-avatar';
@@ -42,7 +43,7 @@ interface QuickAction {
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { user, permissions } = useAuth();
   const premium = usePremium();
   const [showAdsConsent, setShowAdsConsent] = useState(false);
@@ -130,7 +131,7 @@ export default function DashboardScreen() {
         accessibilityLabel={t('common.loading')}
       >
         <View style={styles.inner}>
-          <SkeletonRows count={1} />
+          <SkeletonHero />
           <View style={{ height: Spacing.md }} />
           <SkeletonStats count={3} />
           <SkeletonHeading />
@@ -160,24 +161,29 @@ export default function DashboardScreen() {
       <View style={styles.inner}>
         <UpdateBanner />
 
-        {/* Expressive M3 Welcome Container */}
+        {/* Material You Profile Hero */}
         <M3Entrance index={0}>
-          <View style={[styles.profileCard, { backgroundColor: colors.primaryContainer }]}>
+          <View
+            style={[
+              styles.profileCard,
+              getGlassStyle(colors, isDark, 'elevated', Radius.xl),
+            ]}
+          >
             <DiceBearAvatar seed={user?.email || user?.username || 'cfmobile'} size={48} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.greeting, { color: colors.onPrimaryContainer }]}>{t('dashboard.welcome')}</Text>
-              <Text style={[styles.name, { color: colors.onPrimaryContainer }]} numberOfLines={1}>
+              <Text style={[styles.greeting, { color: isDark ? colors.primaryLight : colors.primary }]}>{t('dashboard.welcome')}</Text>
+              <Text style={[styles.name, { color: colors.onSurface }]} numberOfLines={1}>
                 {user?.first_name || user?.email?.split('@')[0] || 'Admin'}
               </Text>
             </View>
           </View>
         </M3Entrance>
 
-        {/* Tonal Zone Stats */}
+        {/* Frosted Zone Stats */}
         <M3Entrance index={1}>
           <View style={styles.statsRow}>
             {stats.map((s) => (
-              <View key={s.label} style={[styles.statCard, { backgroundColor: colors.surfaceContainer }]}>
+              <View key={s.label} style={[styles.statCard, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
                 <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
                   {s.label}
                 </Text>
@@ -195,7 +201,7 @@ export default function DashboardScreen() {
           <DiscoverCards firstZoneId={zones[0]?.id} />
         </M3Entrance>
 
-        {/* M3 Squircle Quick Actions */}
+        {/* Frosted Squircle Quick Actions */}
         <M3Entrance index={3}>
           <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>{t('dashboard.quick_actions')}</Text>
           <View style={styles.actionsGrid}>
@@ -205,11 +211,21 @@ export default function DashboardScreen() {
                 radius={Radius.lg}
                 scaleTo={0.96}
                 onPress={action.onPress}
-                style={[styles.actionTile, { backgroundColor: colors.surfaceContainerLow }]}
+                style={[styles.actionTile, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
                 accessibilityRole="button"
                 accessibilityLabel={action.label}
               >
-                <View style={[styles.actionIcon, { backgroundColor: colors.secondaryContainer }]}>
+                <View
+                  style={[
+                    styles.actionIcon,
+                    {
+                      backgroundColor: colors.secondaryContainer + '8F',
+                      borderWidth: StyleSheet.hairlineWidth,
+                      borderColor: colors.glassBorderSubtle,
+                      borderTopColor: colors.glassHighlight,
+                    },
+                  ]}
+                >
                   <Icon name={action.icon} size={20} color={colors.onSecondaryContainer} />
                 </View>
                 <Text style={[styles.actionLabel, { color: colors.onSurface }]} numberOfLines={1}>
@@ -230,7 +246,10 @@ export default function DashboardScreen() {
               <M3Pressable
                 radius={Radius.full}
                 onPress={() => router.push('/(tabs)/zones')}
-                style={[styles.seeAllBtn, { backgroundColor: colors.secondaryContainer }]}
+                style={[
+                  styles.seeAllBtn,
+                  getTintedGlassStyle(colors, isDark, colors.secondaryContainer + '8F', 16),
+                ]}
                 hitSlop={8}
               >
                 <Text style={[styles.seeAll, { color: colors.onSecondaryContainer }]}>{t('dashboard.see_all')}</Text>
@@ -266,7 +285,7 @@ export default function DashboardScreen() {
               })}
             </Group>
           ) : (
-            <View style={[styles.emptyCard, { backgroundColor: colors.surfaceContainerLow }]}>
+            <View style={[styles.emptyCard, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
               <IconCircle name="cloud-off" size={48} tone="neutral" />
               <Text style={{ color: colors.onSurfaceVariant, fontSize: FontSize.sm }}>{t('dashboard.no_zones')}</Text>
             </View>
@@ -330,7 +349,7 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingTop: Spacing.sm, paddingBottom: Spacing.xxxl, paddingHorizontal: Spacing.lg },
+  content: { paddingTop: Spacing.sm, paddingBottom: 108, paddingHorizontal: Spacing.lg },
   inner: { width: '100%', maxWidth: 960, alignSelf: 'center' },
 
   profileCard: {

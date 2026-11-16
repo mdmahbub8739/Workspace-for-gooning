@@ -66,7 +66,6 @@ export function CreateWorkerSheet({
         })),
         mainModule: selectedTemplate.mainModule,
         compatibilityDate: compatDate.trim() || defaultCompatibilityDate(),
-        usageModel: 'standard',
         moduleSyntax: true,
       });
 
@@ -80,8 +79,16 @@ export function CreateWorkerSheet({
       setErrorMsg(null);
       onCreated(createdName, shouldOpenIde);
     } catch (e: any) {
+      const data = e?.response?.data;
+      const rawString = typeof data === 'string' && data.trim() && !data.trim().startsWith('<')
+        ? data.trim().slice(0, 240)
+        : undefined;
       const msg =
-        e?.response?.data?.errors?.[0]?.message ??
+        data?.errors?.[0]?.message ??
+        data?.messages?.[0]?.message ??
+        data?.error ??
+        data?.message ??
+        rawString ??
         e?.message ??
         t('worker_ide.create_failed');
       setErrorMsg(msg);
@@ -141,7 +148,7 @@ export function CreateWorkerSheet({
       <View
         style={[
           styles.tplPreview,
-          { backgroundColor: colors.surfaceContainer, borderColor: 'transparent' },
+          { backgroundColor: colors.glassSurfaceSubtle, borderColor: colors.glassBorderSubtle },
         ]}
       >
         <Text style={[styles.tplDesc, { color: colors.onSurfaceVariant }]}>

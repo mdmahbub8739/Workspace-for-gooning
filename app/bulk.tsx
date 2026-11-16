@@ -291,7 +291,7 @@ export default function BulkScreen() {
 
         {running && (
           <View style={styles.running}>
-            <Loading message={t('bulk.running')} />
+            <Loading fullScreen={false} variant="linear" message={t('bulk.running')} />
           </View>
         )}
 

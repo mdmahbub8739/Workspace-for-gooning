@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/auth';
 import { ThemeMode, useThemeContext } from '@/contexts/theme';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MenuItem } from '@/components/ui/menu-item';
@@ -73,7 +74,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const { colors, seed, setSeed } = useTheme();
+  const { colors, isDark, seed, setSeed } = useTheme();
   const { mode: themeMode, setMode: setThemeMode } = useThemeContext();
   const { user, authConfig, logout, accounts, accountId, switchAccount, profiles } = useAuth();
 
@@ -186,20 +187,31 @@ export default function SettingsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.inner}>
-        {/* Expressive M3 Account Banner */}
+        {/* Material You Account Card */}
         <M3Entrance index={0}>
-          <View style={[styles.accountCard, { backgroundColor: colors.primaryContainer }]}>
+          <View
+            style={[
+              styles.accountCard,
+              getGlassStyle(colors, isDark, 'elevated', Radius.xl),
+            ]}
+          >
             <DiceBearAvatar seed={user?.email || user?.username || 'cfmobile'} size={48} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.accountName, { color: colors.onPrimaryContainer }]} numberOfLines={1}>
+              <Text style={[styles.accountName, { color: colors.onSurface }]} numberOfLines={1}>
                 {user?.first_name ? `${user.first_name} ${user.last_name ?? ''}`.trim() : (user?.email?.split('@')[0] ?? 'Admin')}
               </Text>
-              <Text style={[styles.accountEmail, { color: colors.onPrimaryContainer }]} numberOfLines={1}>
+              <Text style={[styles.accountEmail, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
                 {showSensitive ? user?.email : maskEmail(user?.email ?? '')}
               </Text>
             </View>
-            <View style={[styles.methodChip, { backgroundColor: colors.surfaceContainerLowest + 'CC' }]}>
-              <Text style={[styles.methodText, { color: colors.onSurface }]}>
+            <View
+              style={[
+                styles.methodChip,
+                getTintedGlassStyle(colors, isDark, colors.primary + '24', 14),
+                { borderColor: colors.primary + '55' },
+              ]}
+            >
+              <Text style={[styles.methodText, { color: isDark ? colors.primaryLight : colors.primary }]}>
                 {authConfig?.method === 'oauth' ? 'OAUTH' : authConfig?.method === 'token' ? 'TOKEN' : 'KEY'}
               </Text>
             </View>
@@ -265,8 +277,8 @@ export default function SettingsScreen() {
 
         {/* Material You Personalization & Theme */}
         <M3Entrance index={2}>
-          <SectionHeader title={t('settings.appearance')} />
-          <View style={[styles.themeCard, { backgroundColor: colors.surfaceContainerLow }]}>
+          <SectionHeader icon="sparkles" title={t('settings.appearance')} />
+          <View style={[styles.themeCard, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
             <ChipRow
               wrap
               options={THEME_OPTIONS.map((opt) => ({ value: opt.mode, label: t(opt.labelKey) }))}
@@ -274,7 +286,7 @@ export default function SettingsScreen() {
               onChange={setThemeMode}
             />
 
-            <View style={[styles.paletteDivider, { backgroundColor: colors.outlineVariant + '44' }]} />
+            <View style={[styles.paletteDivider, { backgroundColor: colors.glassBorderSubtle }]} />
 
             <Text style={[styles.paletteHeading, { color: colors.onSurfaceVariant }]}>
               {t('settings.color_palette', { defaultValue: 'Material You Color Palette' })}
@@ -291,9 +303,10 @@ export default function SettingsScreen() {
                     scaleTo={0.94}
                     style={[
                       styles.swatchCard,
-                      {
-                        backgroundColor: active ? colors.secondaryContainer : colors.surfaceContainer,
-                      },
+                      active
+                        ? getTintedGlassStyle(colors, isDark, colors.secondaryContainer + '8F', 16)
+                        : getGlassStyle(colors, isDark, 'subtle', Radius.md),
+                      active && { borderColor: item.swatch + '66' },
                     ]}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
@@ -331,7 +344,7 @@ export default function SettingsScreen() {
         </M3Entrance>
 
         {/* Stored Cloudflare logins */}
-        <SectionHeader title={t('settings.accounts_section')} />
+        <SectionHeader icon="users" title={t('settings.accounts_section')} />
         <Group>
           <ListRow
             icon="users"
@@ -343,7 +356,7 @@ export default function SettingsScreen() {
 
         {accounts.length > 1 && (
           <>
-            <SectionHeader title={t('settings.switch_account')} />
+            <SectionHeader icon="refresh" title={t('settings.switch_account')} />
             <Group>
               {accounts.map((acc) => (
                 <ListRow
@@ -365,7 +378,7 @@ export default function SettingsScreen() {
         )}
 
         {/* Language */}
-        <SectionHeader title={t('settings.language')} />
+        <SectionHeader icon="languages" title={t('settings.language')} />
         <Group>
           <ListRow
             icon="languages"
@@ -375,7 +388,7 @@ export default function SettingsScreen() {
         </Group>
 
         {/* Products */}
-        <SectionHeader title={t('products.title')} />
+        <SectionHeader icon="grid" title={t('products.title')} />
         <Group>
           <ListRow
             icon="grid"
@@ -386,7 +399,7 @@ export default function SettingsScreen() {
         </Group>
 
         {/* Security */}
-        <SectionHeader title={t('settings.security')} />
+        <SectionHeader icon="shield" title={t('settings.security')} />
         <Group>
           <ListRow
             icon="widgets"
@@ -416,7 +429,7 @@ export default function SettingsScreen() {
         </Group>
 
         {/* Monitoring */}
-        <SectionHeader title={t('settings.monitoring_section')} />
+        <SectionHeader icon="activity" title={t('settings.monitoring_section')} />
         <Group>
           <ListRow
             icon="activity"
@@ -428,6 +441,7 @@ export default function SettingsScreen() {
 
         {/* Account Info */}
         <SectionHeader
+          icon="user"
           title={t('settings.account_info')}
           action={
             <TouchableOpacity onPress={() => setShowSensitive(!showSensitive)} hitSlop={10} accessibilityRole="button">
@@ -451,14 +465,14 @@ export default function SettingsScreen() {
         </Group>
 
         {/* API Info */}
-        <SectionHeader title={t('settings.api_info')} />
+        <SectionHeader icon="code" title={t('settings.api_info')} />
         <Group>
           <ValueRow label={t('settings.rate_limit')} value="1,200 req / 5 min" />
           <ValueRow label={t('settings.api_version')} value="v4" />
         </Group>
 
         {/* About */}
-        <SectionHeader title={t('settings.about_section')} />
+        <SectionHeader icon="info" title={t('settings.about_section')} />
         <Group>
           <ListRow
             icon="info"
@@ -494,7 +508,7 @@ export default function SettingsScreen() {
 
         {__DEV__ && (
           <>
-            <SectionHeader title="Developer" />
+            <SectionHeader icon="developer-mode" title="Developer" />
             <Group>
               <ToggleRow
                 icon="developer-mode"
@@ -551,7 +565,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: Spacing.lg, paddingBottom: Spacing.xxxl },
+  content: { padding: Spacing.lg, paddingBottom: 108 },
   inner: { width: '100%', maxWidth: 820, alignSelf: 'center' },
 
   accountCard: {

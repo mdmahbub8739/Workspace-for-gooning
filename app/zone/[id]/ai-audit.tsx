@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconCircle } from '@/components/ui/kit';
+import { M3LinearProgress, M3LoadingIndicator } from '@/components/ui/loading';
 import { Spacing, FontSize, Radius } from '@/constants/theme';
 import * as api from '@/services/cloudflare';
 import * as ai from '@/services/ai';
@@ -22,7 +24,7 @@ type Tone = 'neutral' | 'success' | 'warning' | 'error';
 export default function AiAuditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const [result, setResult] = useState<AuditResult | null>(null);
   const [running, setRunning] = useState(false);
@@ -130,7 +132,8 @@ export default function AiAuditScreen() {
 
         {running && (
           <View style={styles.intro}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <M3LoadingIndicator size={64} contained />
+            <M3LinearProgress height={4} style={{ width: 180, marginTop: Spacing.md }} />
             <Text style={[styles.introTitle, { color: colors.text, marginTop: Spacing.lg }]}>
               {t('ai.analyzing')}
             </Text>
@@ -184,7 +187,7 @@ export default function AiAuditScreen() {
                   <Text style={[styles.findingTitle, { color: colors.text }]}>{f.title}</Text>
                   <Text style={[styles.findingDetail, { color: colors.textSecondary }]}>{f.detail}</Text>
                   {!!f.action && (
-                    <View style={[styles.actionBox, { backgroundColor: colors.surfaceSecondary }]}>
+                    <View style={[styles.actionBox, getGlassStyle(colors, isDark, 'subtle', Radius.md)]}>
                       <Icon name="zap" size={14} color={colors.textSecondary} />
                       <Text style={[styles.actionText, { color: colors.text }]}>{f.action}</Text>
                     </View>

@@ -8,6 +8,7 @@ import { usePremium } from '@/services/premium';
 import { openReview } from '@/services/review-prompt';
 import * as monitoring from '@/services/monitoring';
 import { M3Entrance, M3Pressable } from '@/components/ui/m3-motion';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Spacing, FontSize, Radius } from '@/constants/theme';
 
 interface DiscoverCard {
@@ -22,7 +23,7 @@ interface DiscoverCard {
 
 export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const premium = usePremium();
   const [monitorOn, setMonitorOn] = useState(false);
 
@@ -121,9 +122,19 @@ export function DiscoverCards({ firstZoneId }: { firstZoneId?: string }) {
                 onPress={card.onPress}
                 scaleTo={0.97}
                 radius={Radius.lg}
-                style={[styles.card, { backgroundColor: colors.surfaceContainerLow }]}
+                style={[styles.card, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
               >
-                <View style={[styles.iconWrap, { backgroundColor: badge.bg }]}>
+                <View
+                  style={[
+                    styles.iconWrap,
+                    {
+                      backgroundColor: badge.bg + '8F',
+                      borderWidth: StyleSheet.hairlineWidth,
+                      borderColor: colors.glassBorderSubtle,
+                      borderTopColor: colors.glassHighlight,
+                    },
+                  ]}
+                >
                   <Icon name={card.icon} size={20} color={badge.fg} />
                 </View>
                 <Text style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>{card.title}</Text>

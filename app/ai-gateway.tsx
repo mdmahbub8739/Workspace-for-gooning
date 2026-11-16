@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +20,7 @@ import { PremiumPaywall } from '@/components/ui/premium-gate';
 
 export default function AIGatewayScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
   const premium = useUnlocked('ai-gateway');
 
@@ -85,7 +86,7 @@ export default function AIGatewayScreen() {
   const renderGateway = ({ item }: { item: AIGateway }) => {
     const hasBadges = !!item.authentication || item.rate_limiting_limit > 0;
     return (
-      <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+      <View style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
         <ListRow
           icon="zap"
           title={item.id}

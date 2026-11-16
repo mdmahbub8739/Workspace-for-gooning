@@ -4,6 +4,7 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Banner } from '@/components/ui/kit';
 import { useAuth } from '@/contexts/auth';
@@ -35,7 +36,7 @@ function decodeUtf8(buf: ArrayBuffer): string {
 export default function WorkerTailScreen() {
   const { script } = useLocalSearchParams<{ script: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
 
   const [events, setEvents] = useState<TailEvent[]>([]);
@@ -142,10 +143,10 @@ export default function WorkerTailScreen() {
   const renderEvent = ({ item }: { item: TailEvent }) => {
     const ok = item.outcome === 'ok';
     return (
-      <View style={[styles.eventCard, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+      <View style={[styles.eventCard, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
         <View style={styles.eventTop}>
           {item.method && (
-            <View style={[styles.methodPill, { backgroundColor: colors.surfaceSecondary }]}>
+            <View style={[styles.methodPill, getGlassStyle(colors, isDark, 'subtle', Radius.xs)]}>
               <Text style={[styles.methodText, { color: colors.text }]}>{item.method}</Text>
             </View>
           )}
@@ -183,7 +184,7 @@ export default function WorkerTailScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Status bar */}
         <View style={styles.top}>
-          <View style={[styles.statusBar, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+          <View style={[styles.statusBar, getGlassStyle(colors, isDark, 'elevated', Radius.full)]}>
             <View style={[styles.stateDot, { backgroundColor: stateColor }]} />
             <Text style={[styles.stateText, { color: colors.text }]} numberOfLines={1}>{stateLabel}</Text>
             <View style={styles.spacer} />
@@ -191,7 +192,7 @@ export default function WorkerTailScreen() {
               <TouchableOpacity
                 onPress={connect}
                 hitSlop={8}
-                style={[styles.iconBtn, { backgroundColor: colors.surfaceSecondary }]}
+                style={[styles.iconBtn, getGlassStyle(colors, isDark, 'subtle', 18)]}
                 accessibilityRole="button"
                 accessibilityLabel={t('common.retry')}
               >
@@ -201,7 +202,11 @@ export default function WorkerTailScreen() {
             <TouchableOpacity
               onPress={() => setPaused(!paused)}
               hitSlop={8}
-              style={[styles.iconBtn, { backgroundColor: paused ? colors.warning + '18' : colors.surfaceSecondary }]}
+              style={[
+                styles.iconBtn,
+                getGlassStyle(colors, isDark, 'subtle', 18),
+                paused && { backgroundColor: colors.warning + '24', borderColor: colors.warning + '55' },
+              ]}
               accessibilityRole="button"
               accessibilityState={{ selected: paused }}
             >
@@ -210,7 +215,7 @@ export default function WorkerTailScreen() {
             <TouchableOpacity
               onPress={() => setEvents([])}
               hitSlop={8}
-              style={[styles.iconBtn, { backgroundColor: colors.surfaceSecondary }]}
+              style={[styles.iconBtn, getGlassStyle(colors, isDark, 'subtle', 18)]}
               accessibilityRole="button"
             >
               <Icon name="delete-sweep" size={16} color={colors.textSecondary} />

@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,7 @@ import { WebAnalyticsSite } from '@/services/cloudflare';
 
 export default function WebAnalyticsScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
 
   const [sites, setSites] = useState<WebAnalyticsSite[]>([]);
@@ -51,7 +52,7 @@ export default function WebAnalyticsScreen() {
   };
 
   const renderSite = ({ item }: { item: WebAnalyticsSite }) => (
-    <View style={[styles.site, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+    <View style={[styles.site, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
       <IconCircle name="chart-line" />
       <View style={styles.siteBody}>
         <Text style={[styles.siteHost, { color: colors.text }]} numberOfLines={1}>

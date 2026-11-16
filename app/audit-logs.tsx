@@ -3,6 +3,7 @@ import { StyleSheet, View, FlatList, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Button } from '@/components/ui/button';
 import { HeaderButton } from '@/components/ui/header-button';
 import { Loading } from '@/components/ui/loading';
@@ -16,7 +17,7 @@ import { AuditLogEntry } from '@/services/cloudflare';
 
 export default function AuditLogsScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
 
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
@@ -86,7 +87,7 @@ export default function AuditLogsScreen() {
   };
 
   const renderLog = ({ item }: { item: AuditLogEntry }) => (
-    <View style={[styles.logCard, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+    <View style={[styles.logCard, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
       <ListRow
         icon={item.action?.result ? 'check-circle' : 'error-circle'}
         iconTone={item.action?.result ? 'success' : 'error'}

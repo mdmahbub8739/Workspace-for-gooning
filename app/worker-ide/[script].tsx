@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,13 +18,14 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loading } from '@/components/ui/loading';
+import { Loading, M3Spinner } from '@/components/ui/loading';
 import { Sheet } from '@/components/ui/sheet';
 import { Banner, Field, Group, ListRow, ToggleRow } from '@/components/ui/kit';
 import { M3Switch } from '@/components/ui/m3-motion';
 import { SyntaxEditor } from '@/components/worker-ide/SyntaxEditor';
 import { FileTreeDrawer } from '@/components/worker-ide/FileTreeDrawer';
 import { useTheme } from '@/hooks/use-theme';
+import { getBackdropBlurStyle, getGlassStyle } from '@/components/ui/glass';
 import { useAuth } from '@/contexts/auth';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
 import * as api from '@/services/cloudflare';
@@ -58,7 +58,7 @@ export default function WorkerIdeScreen() {
   const { script } = useLocalSearchParams<{ script: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -566,7 +566,7 @@ export default function WorkerIdeScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {/* Top IDE Header Bar */}
-        <View style={[styles.topBar, { backgroundColor: colors.surfaceContainerLow, borderBottomColor: colors.outlineVariant + '55' }]}>
+        <View style={[styles.topBar, getGlassStyle(colors, isDark, 'header'), { borderBottomColor: colors.glassBorderSubtle }]}>
           <TouchableOpacity
             onPress={handleBack}
             hitSlop={8}
@@ -592,7 +592,7 @@ export default function WorkerIdeScreen() {
 
           <View style={styles.statusWrap}>
             {deployStatus === 'deploying' ? (
-              <ActivityIndicator size="small" color={colors.primary} />
+              <M3Spinner size="sm" color={colors.primary} />
             ) : (
               <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
             )}
@@ -625,13 +625,13 @@ export default function WorkerIdeScreen() {
         </View>
 
         {deployError && (
-          <View style={[styles.errorBannerWrap, { backgroundColor: colors.background }]}>
+          <View style={styles.errorBannerWrap}>
             <Banner message={deployError} />
           </View>
         )}
 
         {/* Open File Tabs Strip */}
-        <View style={[styles.tabsBar, { backgroundColor: colors.surfaceContainerLow, borderBottomColor: colors.outlineVariant + '55' }]}>
+        <View style={[styles.tabsBar, { backgroundColor: colors.glassSurfaceSubtle, borderBottomColor: colors.glassBorderSubtle }]}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -648,9 +648,9 @@ export default function WorkerIdeScreen() {
                   style={[
                     styles.tabItem,
                     {
-                      backgroundColor: isActive ? colors.background : 'transparent',
+                      backgroundColor: isActive ? colors.glassSurfaceElevated : 'transparent',
                       borderBottomColor: isActive ? colors.primary : 'transparent',
-                      borderRightColor: colors.borderLight,
+                      borderRightColor: colors.glassBorderSubtle,
                     },
                   ]}
                 >
@@ -701,7 +701,7 @@ export default function WorkerIdeScreen() {
           <View
             style={[
               styles.breadcrumbBar,
-              { backgroundColor: colors.surfaceContainer, borderBottomColor: colors.outlineVariant + '55' },
+              { backgroundColor: colors.glassSurface, borderBottomColor: colors.glassBorderSubtle },
             ]}
           >
             <ScrollView
@@ -731,7 +731,7 @@ export default function WorkerIdeScreen() {
             </ScrollView>
 
             <View style={styles.breadcrumbActions}>
-              <View style={[styles.mimeBadge, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+              <View style={[styles.mimeBadge, getGlassStyle(colors, isDark, 'subtle', Radius.full)]}>
                 <Text style={[styles.mimeText, { color: colors.textSecondary }]}>
                   {getMimeLabel(activeFile.contentType)}
                 </Text>
@@ -748,7 +748,7 @@ export default function WorkerIdeScreen() {
                     setMainModule(activeFile.path);
                     bumpMutation();
                   }}
-                  style={[styles.miniBtn, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+                  style={[styles.miniBtn, getGlassStyle(colors, isDark, 'subtle', Radius.full)]}
                 >
                   <Text style={[styles.miniBtnText, { color: colors.textSecondary }]}>
                     {t('worker_ide.set_entry')}
@@ -881,7 +881,7 @@ export default function WorkerIdeScreen() {
           {!isWide && drawerOpen && (
             <View style={styles.overlayRoot}>
               <TouchableOpacity
-                style={styles.overlayBackdrop}
+                style={[styles.overlayBackdrop, { backgroundColor: colors.glassOverlay }, getBackdropBlurStyle(8)]}
                 activeOpacity={1}
                 onPress={() => setDrawerOpen(false)}
               />

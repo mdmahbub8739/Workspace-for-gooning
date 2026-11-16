@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRow } from '@/components/ui/kit';
@@ -16,7 +17,7 @@ import { PremiumPaywall } from '@/components/ui/premium-gate';
 
 export default function DNSFirewallScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
   const premium = useUnlocked('dns-firewall');
   const [items, setItems] = useState<DNSFirewallCluster[]>([]);
@@ -60,7 +61,7 @@ export default function DNSFirewallScreen() {
         data={items}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
-          <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+          <View style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
             <ListRow
               icon="shield"
               title={item.name}

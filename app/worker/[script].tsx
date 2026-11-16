@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextStyle, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
@@ -35,7 +36,7 @@ export default function WorkerDetailScreen() {
   const { script } = useLocalSearchParams<{ script: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
 
   const [settings, setSettings] = useState<WorkerSettings | null>(null);
@@ -370,7 +371,7 @@ export default function WorkerDetailScreen() {
               </Text>
               <View style={styles.chipWrap}>
                 {settings.bindings.map((b, i) => (
-                  <View key={`${b.name}-${i}`} style={[styles.bindingChip, { backgroundColor: colors.surfaceSecondary }]}>
+                  <View key={`${b.name}-${i}`} style={[styles.bindingChip, getGlassStyle(colors, isDark, 'subtle', Radius.full)]}>
                     <Text style={[styles.bindingName, { color: colors.text }]}>{b.name}</Text>
                     <Text style={[styles.bindingType, { color: colors.textTertiary }]}> · {b.type}</Text>
                   </View>
@@ -444,7 +445,7 @@ export default function WorkerDetailScreen() {
               </Text>
             )}
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <Text style={[styles.code, { color: colors.text, backgroundColor: colors.surfaceSecondary }]}>
+              <Text style={[styles.code, getGlassStyle(colors, isDark, 'subtle', Radius.md) as TextStyle, { color: colors.text }]}>
                 {content}
               </Text>
             </ScrollView>

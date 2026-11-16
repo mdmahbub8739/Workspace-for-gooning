@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, Text, FlatList, RefreshControl, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, FlatList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,8 +8,9 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
-import { Loading } from '@/components/ui/loading';
+import { Loading, M3Spinner } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
 import { HeaderButton } from '@/components/ui/header-button';
@@ -30,7 +31,7 @@ function formatSize(bytes: number): string {
 export default function R2BrowserScreen() {
   const { bucket } = useLocalSearchParams<{ bucket: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { accountId } = useAuth();
 
@@ -169,7 +170,7 @@ export default function R2BrowserScreen() {
   };
 
   const renderObject = ({ item }: { item: R2Object }) => (
-    <View style={[styles.objRow, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+    <View style={[styles.objRow, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
       <IconCircle name="cloud-upload" />
       <View style={styles.objBody}>
         <Text style={[styles.objKey, { color: colors.text }]} numberOfLines={1}>{item.key}</Text>
@@ -178,7 +179,7 @@ export default function R2BrowserScreen() {
         </Text>
       </View>
       {busyKey === item.key ? (
-        <ActivityIndicator size="small" color={colors.textTertiary} />
+        <M3Spinner size="sm" color={colors.textTertiary} />
       ) : (
         <>
           <TouchableOpacity onPress={() => handleDownload(item)} hitSlop={10} accessibilityRole="button">
@@ -213,7 +214,7 @@ export default function R2BrowserScreen() {
           title: bucket,
           headerRight: () => (
             <View style={styles.headerRight}>
-              {uploading && <ActivityIndicator size="small" color={colors.textTertiary} />}
+              {uploading && <M3Spinner size="sm" color={colors.textTertiary} />}
               <HeaderButton
                 icon="settings"
                 label={t('r2.bucket_settings')}

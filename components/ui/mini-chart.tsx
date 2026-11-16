@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useTheme } from '@/hooks/use-theme';
-import { FontSize, Spacing } from '@/constants/theme';
+import { getGlassStyle } from '@/components/ui/glass';
+import { Spacing } from '@/constants/theme';
 
 /** Compact sparkline for dashboards and list rows. */
 export function Sparkline({
@@ -111,9 +112,9 @@ export function StatTile({
   color: string;
   sub?: string;
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   return (
-    <View style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+    <View style={[styles.tile, getGlassStyle(colors, isDark, 'surface', 14)]}>
       <Text style={[styles.tileLabel, { color: colors.textTertiary }]} numberOfLines={1}>{label}</Text>
       <Text style={[styles.tileValue, { color }]}>{value}</Text>
       {!!sub && <Text style={[styles.tileSub, { color: colors.textSecondary }]} numberOfLines={1}>{sub}</Text>}

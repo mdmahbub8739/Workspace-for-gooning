@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { Button } from '@/components/ui/button';
 import { BrandMark } from '@/components/ui/brand';
 import { Banner } from '@/components/ui/kit';
+import { M3LinearProgress, M3LoadingIndicator } from '@/components/ui/loading';
 import { completeOAuth } from '@/services/oauth';
 import { logError } from '@/services/error-log';
 import { Spacing, FontSize } from '@/constants/theme';
@@ -67,8 +68,9 @@ export default function OAuthCallbackScreen() {
           <Button title={t('auth.oauth_retry')} onPress={backToLogin} size="lg" />
         </View>
       ) : (
-        <View style={styles.block}>
-          <ActivityIndicator color={colors.primary} />
+        <View style={[styles.block, { alignItems: 'center' }]}>
+          <M3LoadingIndicator size={56} contained />
+          <M3LinearProgress height={4} style={{ width: 160 }} />
           <Text style={[styles.title, { color: colors.text }]}>{t('auth.oauth_signing_in')}</Text>
         </View>
       )}

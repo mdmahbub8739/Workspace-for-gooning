@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
@@ -101,7 +102,7 @@ function splitCerts(text: string): string[] {
 
 export default function AccessIdpsScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { accountId } = useAuth();
   const premium = useUnlocked('access');
@@ -319,7 +320,7 @@ export default function AccessIdpsScreen() {
             idps.map((idp) => (
               <View
                 key={idp.id ?? idp.name}
-                style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+                style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
               >
                 <ListRow
                   icon="users"

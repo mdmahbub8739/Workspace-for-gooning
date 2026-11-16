@@ -4,7 +4,8 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
-import { M3_EMPHASIZED, M3_SPRING, M3Pressable } from '@/components/ui/m3-motion';
+import { getBackdropBlurStyle, getGlassStyle } from '@/components/ui/glass';
+import { M3_EMPHASIZED, M3_GLASS_SPRING, M3Pressable, isReducedMotionEnabled } from '@/components/ui/m3-motion';
 import { FontSize, Spacing } from '@/constants/theme';
 
 interface SheetProps {
@@ -17,12 +18,12 @@ interface SheetProps {
 }
 
 /**
- * Material Design 3 Modal Bottom Sheet:
- * Animated scrim fade, spring-driven sheet rise, 28dp top corners,
- * tonal `surfaceContainerLow` surface, and 32x4 drag handle.
+ * Frosted Glass Bottom Sheet:
+ * Blurred translucent scrim fade, damped spring sheet rise, specular top rim,
+ * and frosted elevated container.
  */
 export function Sheet({ visible, onClose, title, footer, scroll = true, children }: SheetProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [rendered, setRendered] = useState(visible);
 
@@ -30,14 +31,15 @@ export function Sheet({ visible, onClose, title, footer, scroll = true, children
   const translateY = useSharedValue(320);
 
   useEffect(() => {
+    const reduced = isReducedMotionEnabled();
     if (visible) {
       setRendered(true);
-      backdropOpacity.value = withTiming(1, { duration: 200, easing: M3_EMPHASIZED });
-      translateY.value = withSpring(0, M3_SPRING);
+      backdropOpacity.value = reduced ? 1 : withTiming(1, { duration: 200, easing: M3_EMPHASIZED });
+      translateY.value = reduced ? 0 : withSpring(0, M3_GLASS_SPRING);
     } else if (rendered) {
-      backdropOpacity.value = withTiming(0, { duration: 160, easing: M3_EMPHASIZED });
-      translateY.value = withTiming(340, { duration: 180, easing: M3_EMPHASIZED });
-      const timer = setTimeout(() => setRendered(false), 185);
+      backdropOpacity.value = reduced ? 0 : withTiming(0, { duration: 150, easing: M3_EMPHASIZED });
+      translateY.value = reduced ? 340 : withTiming(340, { duration: 175, easing: M3_EMPHASIZED });
+      const timer = setTimeout(() => setRendered(false), reduced ? 0 : 180);
       return () => clearTimeout(timer);
     }
   }, [visible, rendered, backdropOpacity, translateY]);
@@ -56,14 +58,21 @@ export function Sheet({ visible, onClose, title, footer, scroll = true, children
     <Modal visible={rendered} transparent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.root} behavior="padding">
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close">
-          <Animated.View style={[styles.backdrop, { backgroundColor: colors.scrim }, backdropStyle]} />
+          <Animated.View
+            style={[
+              styles.backdrop,
+              { backgroundColor: colors.glassOverlay },
+              getBackdropBlurStyle(10),
+              backdropStyle,
+            ]}
+          />
         </Pressable>
 
         <Animated.View
           style={[
             styles.sheet,
+            getGlassStyle(colors, isDark, 'elevated'),
             {
-              backgroundColor: colors.surfaceContainerLow,
               paddingBottom: insets.bottom + Spacing.lg,
             },
             sheetStyle,
@@ -80,7 +89,7 @@ export function Sheet({ visible, onClose, title, footer, scroll = true, children
                 scaleTo={0.92}
                 accessibilityRole="button"
                 accessibilityLabel="Close"
-                style={[styles.closeBtn, { backgroundColor: colors.surfaceContainerHigh }]}
+                style={[styles.closeBtn, getGlassStyle(colors, isDark, 'subtle', 18)]}
               >
                 <Icon name="close" size={18} color={colors.onSurfaceVariant} />
               </M3Pressable>
@@ -114,7 +123,11 @@ const styles = StyleSheet.create({
     maxHeight: '88%',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomWidth: 0,
     paddingTop: Spacing.md,
+    overflow: 'hidden',
   },
   grabber: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.md },
   header: {

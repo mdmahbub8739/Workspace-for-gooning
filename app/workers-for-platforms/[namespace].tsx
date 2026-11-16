@@ -4,6 +4,7 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
@@ -18,7 +19,7 @@ import { DispatchScript, DispatchScriptSecret } from '@/services/cloudflare';
 export default function DispatchNamespaceScreen() {
   const { namespace } = useLocalSearchParams<{ namespace: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
 
   const [scripts, setScripts] = useState<DispatchScript[]>([]);
@@ -178,7 +179,7 @@ export default function DispatchNamespaceScreen() {
         {detailLoading ? <Loading fullScreen={false} /> : (
           <>
             <SectionHeader title={t('wfp.content')} />
-            <View style={[styles.contentBox, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+            <View style={[styles.contentBox, getGlassStyle(colors, isDark, 'subtle', Radius.lg)]}>
               <Text style={[styles.contentText, { color: colors.text }]} numberOfLines={12}>{content ?? '—'}</Text>
             </View>
 

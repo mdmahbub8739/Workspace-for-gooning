@@ -4,6 +4,7 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChangeDiff } from '@/components/ui/change-diff';
@@ -26,7 +27,7 @@ const ACTION_KEYS: Record<ChangeEntry['action'], string> = {
 /** Changes made from this app on this device, newest first, each with an undo. */
 export default function HistoryScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [entries, setEntries] = useState<ChangeEntry[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -119,7 +120,7 @@ export default function HistoryScreen() {
         renderItem={({ item }) => {
           const reverted = !!item.revertedAt;
           return (
-            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+            <View style={[styles.card, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
               <View style={styles.head}>
                 <Badge
                   label={t(ACTION_KEYS[item.action])}

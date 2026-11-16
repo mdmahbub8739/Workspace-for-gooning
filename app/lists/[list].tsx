@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionHeader } from '@/components/ui/section-header';
@@ -19,7 +20,7 @@ import { ListItem, ListItemInput, ListKind } from '@/services/cloudflare';
 export default function ListItemsScreen() {
   const { list, name, kind } = useLocalSearchParams<{ list: string; name: string; kind: ListKind }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { accountId } = useAuth();
 
@@ -169,7 +170,7 @@ export default function ListItemsScreen() {
             items.map((item) => (
               <View
                 key={item.id}
-                style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+                style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
               >
                 <View style={styles.itemBody}>
                   <Text style={[styles.itemValue, { color: colors.text }]} numberOfLines={1}>{itemLabel(item)}</Text>

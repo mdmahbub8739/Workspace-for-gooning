@@ -57,7 +57,16 @@ export function PremiumPaywall({ feature }: PremiumPaywallProps) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.iconCircle, { backgroundColor: colors.primary + '15' }]}>
+      <View
+        style={[
+          styles.iconCircle,
+          {
+            backgroundColor: colors.primary + '1C',
+            borderWidth: 1,
+            borderColor: colors.primary + '36',
+          },
+        ]}
+      >
         <Icon name="shield-check" size={40} color={colors.primary} />
       </View>
       <Text style={[styles.title, { color: colors.text }]}>{t('premium.locked_title')}</Text>
@@ -66,7 +75,7 @@ export function PremiumPaywall({ feature }: PremiumPaywallProps) {
         title={price ? t('premium.buy_with_price', { price }) : t('premium.buy')}
         onPress={handleBuy}
         loading={busy}
-        style={{ marginTop: Spacing.lg, alignSelf: 'stretch' }}
+        style={{ marginTop: Spacing.lg, alignSelf: 'stretch', maxWidth: 420 }}
       />
       {!!feature && <RewardedButton feature={feature} />}
       {!!feature && (

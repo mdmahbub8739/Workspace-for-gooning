@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
@@ -32,7 +33,7 @@ const ACTIONS: EmailActionType[] = ['forward', 'worker', 'drop'];
 export default function EmailRoutingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { accountId } = useAuth();
 
@@ -417,7 +418,7 @@ export default function EmailRoutingScreen() {
           {!error && settings?.enabled && (
             <>
               {/* Summary */}
-              <View style={[styles.hero, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+              <View style={[styles.hero, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
                 <IconCircle name="mail" size={44} tone="success" />
                 <View style={styles.heroBody}>
                   <Text style={[styles.heroName, { color: colors.text }]} numberOfLines={1}>{settings.name}</Text>
@@ -440,7 +441,7 @@ export default function EmailRoutingScreen() {
                     <ListRow
                       key={`${r.type}-${r.name}-${i}`}
                       leading={
-                        <View style={[styles.typeBadge, { backgroundColor: colors.surfaceSecondary }]}>
+                        <View style={[styles.typeBadge, getGlassStyle(colors, isDark, 'subtle', Radius.xs)]}>
                           <Text style={[styles.typeText, { color: colors.text }]} numberOfLines={1}>{r.type}</Text>
                         </View>
                       }
@@ -564,7 +565,7 @@ export default function EmailRoutingScreen() {
       >
         <FieldLabel>{t('email.custom_address')}</FieldLabel>
         {/* Field cannot show the "@domain" suffix, so this one input is laid out here. */}
-        <View style={[styles.addrRow, styles.control, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+        <View style={[styles.addrRow, styles.control, getGlassStyle(colors, isDark, 'subtle', Radius.md)]}>
           <TextInput
             style={[styles.addrInput, { color: colors.text }]}
             placeholder="hello"

@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
-  StyleSheet, View, Text, Modal, TouchableOpacity, ActivityIndicator, Alert, ScrollView,
+  StyleSheet, View, Text, Modal, TouchableOpacity, Alert, ScrollView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getBackdropBlurStyle, getGlassStyle } from '@/components/ui/glass';
+import { M3Spinner } from '@/components/ui/loading';
 import * as aiSub from '@/services/ai-subscription';
 import { RewardedButton } from '@/components/ui/rewarded-button';
 import { track } from '@/services/analytics';
-import { Spacing, FontSize, Radius, CF } from '@/constants/theme';
+import { Spacing, FontSize, Radius } from '@/constants/theme';
 
 interface AiPaywallProps {
   visible: boolean;
@@ -20,7 +22,7 @@ interface AiPaywallProps {
 
 export function AiPaywall({ visible, onClose, reason = 'browse', onSubscribed }: AiPaywallProps) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { quota } = aiSub.useAiQuota();
 
   const [price, setPrice] = useState<string | null>(null);
@@ -87,16 +89,16 @@ export function AiPaywall({ visible, onClose, reason = 'browse', onSubscribed }:
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={[styles.overlay, { backgroundColor: colors.glassOverlay }, getBackdropBlurStyle(10)]}>
+        <View style={[styles.sheet, getGlassStyle(colors, isDark, 'elevated'), { borderBottomWidth: 0 }]}>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={10}>
             <Icon name="close" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={[styles.badge, { backgroundColor: CF.orange + '18' }]}>
-              <Icon name="zap" size={30} color={CF.orange} />
+            <View style={[styles.badge, { backgroundColor: colors.primaryContainer }]}>
+              <Icon name="zap" size={30} color={colors.onPrimaryContainer} />
             </View>
 
             <Text style={[styles.title, { color: colors.text }]}>{t('ai_plan.title')}</Text>
@@ -105,7 +107,7 @@ export function AiPaywall({ visible, onClose, reason = 'browse', onSubscribed }:
             </Text>
 
             {quota && (
-              <View style={[styles.quotaBar, { backgroundColor: colors.surfaceSecondary }]}>
+              <View style={[styles.quotaBar, getGlassStyle(colors, isDark, 'subtle', Radius.full)]}>
                 <Text style={[styles.quotaText, { color: colors.textSecondary }]}>
                   {t('ai_plan.usage', { used: quota.used, limit: quota.limit })}
                 </Text>
@@ -115,32 +117,32 @@ export function AiPaywall({ visible, onClose, reason = 'browse', onSubscribed }:
             <View style={styles.perks}>
               {perks.map((p) => (
                 <View key={p.text} style={styles.perkRow}>
-                  <View style={[styles.perkIcon, { backgroundColor: CF.orange + '15' }]}>
-                    <Icon name={p.icon} size={15} color={CF.orange} />
+                  <View style={[styles.perkIcon, { backgroundColor: colors.primaryContainer }]}>
+                    <Icon name={p.icon} size={15} color={colors.onPrimaryContainer} />
                   </View>
                   <Text style={[styles.perkText, { color: colors.text }]}>{p.text}</Text>
                 </View>
               ))}
             </View>
 
-            <View style={[styles.priceCard, { borderColor: CF.orange }]}>
+            <View style={[styles.priceCard, { borderColor: colors.primary }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.planName, { color: colors.text }]}>{t('ai_plan.plan_name')}</Text>
                 <Text style={[styles.planDetail, { color: colors.textSecondary }]}>
                   {t('ai_plan.plan_detail')}
                 </Text>
               </View>
-              <Text style={[styles.price, { color: CF.orange }]}>{price ?? '—'}</Text>
+              <Text style={[styles.price, { color: colors.primary }]}>{price ?? '—'}</Text>
             </View>
 
             <TouchableOpacity
-              style={[styles.cta, { backgroundColor: CF.orange, opacity: busy ? 0.6 : 1 }]}
+              style={[styles.cta, { backgroundColor: colors.primary, opacity: busy ? 0.6 : 1 }]}
               onPress={buy}
               disabled={busy}
               activeOpacity={0.85}
             >
               {busy ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <M3Spinner size="sm" color={colors.onPrimary} />
               ) : (
                 <Text style={styles.ctaText}>{t('ai_plan.subscribe')}</Text>
               )}
@@ -163,8 +165,10 @@ export function AiPaywall({ visible, onClose, reason = 'browse', onSubscribed }:
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  overlay: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
   sheet: {
+    width: '100%',
+    maxWidth: 640,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     padding: Spacing.xl,

@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconName } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Banner, Group, ListRow } from '@/components/ui/kit';
@@ -47,7 +48,7 @@ const APP_LINKS: LinkItem[] = [
 
 export default function AboutScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const open = (url: string) => Linking.openURL(url).catch(() => {});
 
@@ -61,7 +62,7 @@ export default function AboutScreen() {
       >
         {/* The app */}
         <Card style={styles.centerCard}>
-          <View style={[styles.logo, { backgroundColor: colors.surfaceSecondary }]}>
+          <View style={[styles.logo, getGlassStyle(colors, isDark, 'subtle', 18)]}>
             <Icon name="cloudflare" size={32} color={colors.primary} />
           </View>
           <Text style={[styles.appName, { color: colors.text }]}>CloudFlare Mobile</Text>
@@ -74,7 +75,7 @@ export default function AboutScreen() {
         <Card style={styles.centerCard}>
           <Image
             source={{ uri: 'https://github.com/imtaqin.png' }}
-            style={[styles.avatar, { backgroundColor: colors.surfaceSecondary }]}
+            style={[styles.avatar, { backgroundColor: colors.glassSurfaceSubtle, borderWidth: 1, borderColor: colors.glassBorder }]}
           />
           <Text style={[styles.devName, { color: colors.text }]}>Abdul Mutataqin</Text>
           <Text style={[styles.appVersion, { color: colors.textTertiary }]}>@imtaqin</Text>

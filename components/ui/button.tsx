@@ -1,7 +1,9 @@
-import { StyleSheet, Text, ActivityIndicator, ViewStyle, TextStyle, StyleProp } from 'react-native';
-import { Radius, Spacing, FontSize } from '@/constants/theme';
+import { Platform, StyleProp, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
+import { FontSize, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { M3Spinner } from '@/components/ui/loading';
 import { M3Pressable } from '@/components/ui/m3-motion';
+import { getGlassStyle, getTintedGlassStyle } from '@/components/ui/glass';
 
 interface ButtonProps {
   title: string;
@@ -18,16 +20,7 @@ export function Button({
   title, onPress, variant = 'primary', size = 'md',
   loading, disabled, icon, style,
 }: ButtonProps) {
-  const { colors } = useTheme();
-
-  const bgMap: Record<string, string> = {
-    primary: colors.primary,
-    tonal: colors.secondaryContainer,
-    secondary: colors.secondaryContainer,
-    outlined: 'transparent',
-    danger: colors.error,
-    ghost: 'transparent',
-  };
+  const { colors, isDark } = useTheme();
 
   const textMap: Record<string, string> = {
     primary: colors.onPrimary,
@@ -39,9 +32,9 @@ export function Button({
   };
 
   const sizeMap: Record<string, ViewStyle> = {
-    sm: { height: 38, paddingHorizontal: 16 },
-    md: { height: 48, paddingHorizontal: 22 },
-    lg: { height: 54, paddingHorizontal: 26 },
+    sm: { height: 36, paddingHorizontal: 15 },
+    md: { height: 44, paddingHorizontal: 20 },
+    lg: { height: 50, paddingHorizontal: 24 },
   };
 
   const fontMap: Record<string, TextStyle> = {
@@ -52,11 +45,43 @@ export function Button({
 
   const isDisabled = disabled || loading;
 
+  const variantStyle: ViewStyle =
+    variant === 'primary'
+      ? {
+          ...getTintedGlassStyle(colors, isDark, colors.primary + 'CC', 18),
+          borderColor: 'rgba(255, 255, 255, 0.34)',
+          ...(Platform.OS === 'web'
+            ? ({
+                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.42), 0 2px 10px ${colors.cardShadow}`,
+                backgroundImage: 'linear-gradient(160deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.04) 48%, rgba(0,0,0,0.06) 100%)',
+              } as unknown as ViewStyle)
+            : {}),
+        }
+      : variant === 'danger'
+        ? {
+            ...getTintedGlassStyle(colors, isDark, colors.error + 'CC', 18),
+            borderColor: 'rgba(255, 255, 255, 0.30)',
+            ...(Platform.OS === 'web'
+              ? ({
+                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.36), 0 2px 10px ${colors.cardShadow}`,
+                  backgroundImage: 'linear-gradient(160deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.03) 50%, rgba(0,0,0,0.05) 100%)',
+                } as unknown as ViewStyle)
+              : {}),
+          }
+        : variant === 'tonal' || variant === 'secondary'
+          ? getTintedGlassStyle(colors, isDark, colors.secondaryContainer + (isDark ? '8F' : '9C'), 16)
+          : variant === 'outlined'
+            ? {
+                ...getGlassStyle(colors, isDark, 'subtle', Radius.full),
+                borderColor: colors.outline + '66',
+              }
+            : { backgroundColor: 'transparent' };
+
   return (
     <M3Pressable
       onPress={onPress}
       disabled={isDisabled}
-      scaleTo={0.965}
+      scaleTo={0.968}
       radius={Radius.full}
       stateLayerColor={variant === 'primary' || variant === 'danger' ? '#FFFFFF' : colors.onSurface}
       accessibilityRole="button"
@@ -64,16 +89,13 @@ export function Button({
       style={[
         styles.button,
         sizeMap[size],
-        {
-          backgroundColor: bgMap[variant],
-          opacity: isDisabled ? 0.45 : 1,
-        },
-        variant === 'outlined' && { borderWidth: 1, borderColor: colors.outline },
+        variantStyle,
+        { opacity: isDisabled ? 0.45 : 1 },
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={textMap[variant]} />
+        <M3Spinner size="sm" color={textMap[variant]} />
       ) : (
         <>
           {icon}

@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  StyleSheet, View, Text, ScrollView, RefreshControl, Alert, TouchableOpacity, Switch,
+  StyleSheet, View, Text, TextStyle, ScrollView, RefreshControl, Alert, TouchableOpacity, Switch,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
@@ -37,7 +38,7 @@ const TEMPLATES: { key: string; expression: string }[] = [
 export default function FirewallScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [rulesetId, setRulesetId] = useState<string | null>(null);
@@ -283,7 +284,7 @@ export default function FirewallScreen() {
       {!!opts.description && (
         <Text style={[styles.ruleDesc, { color: colors.text }]}>{opts.description}</Text>
       )}
-      <Text style={[styles.ruleExpr, { color: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>
+      <Text style={[styles.ruleExpr, getGlassStyle(colors, isDark, 'subtle', Radius.xs) as TextStyle, { color: colors.textSecondary }]}>
         {opts.expression || '-'}
       </Text>
     </Card>

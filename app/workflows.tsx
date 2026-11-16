@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +18,7 @@ import { PremiumPaywall } from '@/components/ui/premium-gate';
 
 export default function WorkflowsScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
   const premium = useUnlocked('workflows');
 
@@ -58,7 +59,7 @@ export default function WorkflowsScreen() {
     const total = (inst?.complete ?? 0) + (inst?.running ?? 0) + (inst?.errored ?? 0) + (inst?.queued ?? 0) + (inst?.waiting ?? 0);
     const hasBadges = !!inst?.running || !!inst?.errored || !!inst?.queued || total > 0;
     return (
-      <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+      <View style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
         <ListRow
           icon="route"
           title={item.name}

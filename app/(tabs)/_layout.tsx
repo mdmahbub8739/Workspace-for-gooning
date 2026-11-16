@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { FloatingTabBar } from '@/components/ui/tab-bar';
 import { HeaderButton } from '@/components/ui/header-button';
+import { GlassHeaderBackdrop } from '@/components/ui/glass';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/contexts/auth';
@@ -38,7 +39,7 @@ export default function TabLayout() {
     }
   }, []);
 
-  if (isLoading || !onboardingChecked) return <Loading />;
+  if (isLoading || !onboardingChecked) return <Loading variant="splash" />;
   if (!onboardingDone) return <Redirect href="/onboarding" />;
   if (!isAuthenticated && connectionError) {
     return (
@@ -63,13 +64,14 @@ export default function TabLayout() {
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: colors.background },
+        headerStyle: { backgroundColor: 'transparent' },
+        headerBackground: () => <GlassHeaderBackdrop />,
         headerTintColor: colors.onSurface,
         headerShadowVisible: false,
         headerTitleAlign: 'left',
         headerTitleStyle: { fontSize: 24, fontWeight: '600', letterSpacing: -0.4 },
         headerRight: headerActions,
-        sceneStyle: { backgroundColor: colors.background },
+        sceneStyle: { backgroundColor: 'transparent' },
         animation: 'fade',
       }}
     >

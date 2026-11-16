@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   StyleSheet, View, Text, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl, Alert,
+  RefreshControl, Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
-import { Loading } from '@/components/ui/loading';
+import { getGlassStyle } from '@/components/ui/glass';
+import { M3Pressable } from '@/components/ui/m3-motion';
+import { Loading, M3Spinner } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
@@ -26,7 +28,7 @@ interface KVKey {
 export default function KVBrowserScreen() {
   const { ns, name } = useLocalSearchParams<{ ns: string; name?: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { accountId } = useAuth();
 
@@ -165,10 +167,11 @@ export default function KVBrowserScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.primary} />
           }
           renderItem={({ item }) => (
-            <TouchableOpacity
+            <M3Pressable
+              radius={Radius.lg}
+              scaleTo={0.985}
               onPress={() => openKey(item.name)}
-              activeOpacity={0.7}
-              style={[styles.keyRow, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}
+              style={[styles.keyRow, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}
             >
               <IconCircle name="key" />
               <View style={styles.keyBody}>
@@ -187,7 +190,7 @@ export default function KVBrowserScreen() {
               >
                 <Icon name="trash" size={16} color={colors.textTertiary} />
               </TouchableOpacity>
-            </TouchableOpacity>
+            </M3Pressable>
           )}
           ListEmptyComponent={<EmptyState icon="key" title={t('kv.no_keys')} message={t('kv.no_keys_message')} />}
         />
@@ -217,7 +220,7 @@ export default function KVBrowserScreen() {
         {valueLoading ? (
           <>
             <FieldLabel>{t('kv.value')}</FieldLabel>
-            <ActivityIndicator style={styles.spinner} color={colors.primary} />
+            <M3Spinner size="md" style={styles.spinner} color={colors.primary} />
           </>
         ) : (
           <Field

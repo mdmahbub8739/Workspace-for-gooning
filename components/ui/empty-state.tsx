@@ -15,7 +15,16 @@ export function EmptyState({ icon = 'info', title, message }: EmptyStateProps) {
 
   return (
     <M3Entrance style={styles.container}>
-      <View style={[styles.iconWrap, { backgroundColor: colors.secondaryContainer }]}>
+      <View
+        style={[
+          styles.iconWrap,
+          {
+            backgroundColor: colors.secondaryContainer + 'D8',
+            borderWidth: 1,
+            borderColor: colors.glassBorder,
+          },
+        ]}
+      >
         <Icon name={icon} size={28} color={colors.onSecondaryContainer} />
       </View>
       <Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text>

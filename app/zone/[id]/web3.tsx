@@ -4,6 +4,7 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +18,7 @@ import { PremiumPaywall } from '@/components/ui/premium-gate';
 export default function Web3Screen() {
   const { id: zoneId } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const premium = useUnlocked('web3');
   const [items, setItems] = useState<Web3Hostname[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +60,7 @@ export default function Web3Screen() {
         data={items}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
-          <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+          <View style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
             <ListRow
               icon="globe"
               title={item.name}

@@ -3,6 +3,7 @@ import { StyleSheet, View, FlatList, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Loading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +17,7 @@ import { PremiumPaywall } from '@/components/ui/premium-gate';
 
 export default function WorkersAIScreen() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { accountId } = useAuth();
   const premium = useUnlocked('workers-ai');
 
@@ -42,7 +43,7 @@ export default function WorkersAIScreen() {
   useEffect(() => { fetchModels(); }, [fetchModels]);
 
   const renderModel = ({ item }: { item: AIModel }) => (
-    <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+    <View style={[styles.item, getGlassStyle(colors, isDark, 'surface', Radius.lg)]}>
       <ListRow
         icon="zap"
         title={item.name ?? item.id}

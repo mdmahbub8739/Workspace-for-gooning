@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  StyleSheet, View, Text, FlatList, RefreshControl, Alert, TouchableOpacity,
+  StyleSheet, View, Text, TextStyle, FlatList, RefreshControl, Alert, TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/ui/icon';
 import { useTheme } from '@/hooks/use-theme';
+import { getGlassStyle } from '@/components/ui/glass';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
@@ -18,7 +19,7 @@ import { PageRule } from '@/services/types';
 export default function PageRulesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const [rules, setRules] = useState<PageRule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,14 +86,14 @@ export default function PageRulesScreen() {
       </View>
 
       {item.targets.map((target, i) => (
-        <Text key={i} style={[styles.targetUrl, { color: colors.text, backgroundColor: colors.surfaceSecondary }]}>
+        <Text key={i} style={[styles.targetUrl, getGlassStyle(colors, isDark, 'subtle', Radius.xs) as TextStyle, { color: colors.text }]}>
           {target.constraint.value}
         </Text>
       ))}
 
       <View style={styles.actionsWrap}>
         {item.actions.map((action, i) => (
-          <View key={i} style={[styles.actionChip, { backgroundColor: colors.surfaceSecondary }]}>
+          <View key={i} style={[styles.actionChip, getGlassStyle(colors, isDark, 'subtle', Radius.full)]}>
             <Text style={[styles.actionText, { color: colors.textSecondary }]}>
               {action.id}: {typeof action.value === 'object' ? JSON.stringify(action.value) : String(action.value ?? 'on')}
             </Text>
